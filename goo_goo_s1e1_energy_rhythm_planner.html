@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>S1E1 "The Growl" — Energy Rhythm Planner · Project: goo-goo · AricCivicLabs</title>
+<meta name="description" content="Build your weekly eat-by-this-time schedule and starter shopping list from a few questions about your energy dips and routine. No login, no wearables, nothing saved — the first real build of Project: goo-goo.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6EFDC; --paper2:#FFFBF1; --paper3:#EFE5C9;
+    --ink:#2A2018; --ink2:#6E5F4A; --ink3:#746352;
+    --navy:#1F3A5C; --brick:#A8412F; --gold:#8F6418;
+    --p5:#2B8C7E; --p5-bg:rgba(43,140,126,.1); --p5-bd:rgba(43,140,126,.3);
+    --border:#E2D2A8; --border-d:#D3C193;
+    --cook:#3D7A57; --cook-bg:rgba(61,122,87,.12); --cook-bd:rgba(61,122,87,.32);
+    --order:#8F6418; --order-bg:rgba(143,100,24,.12); --order-bd:rgba(143,100,24,.32);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{color-scheme:light; background-color:#F6EFDC; min-height:100%;}
+  body{background-color:#F6EFDC; color:var(--ink); font-family:'DM Sans', sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased;}
+  .serif{font-family:'Libre Caslon Display', serif;}
+  .mono{font-family:'DM Mono', monospace;}
+  .container{max-width:980px; margin:0 auto; padding:28px 20px 90px;}
+
+  .acl-eco-bar{display:flex;align-items:center;padding:0 28px;height:34px;background:rgba(0,0,0,0.022);border-bottom:1px solid rgba(0,0,0,0.09);}
+  .acl-eco-org{font-family:'DM Mono',monospace;font-size:10.5px;font-weight:500;color:rgba(0,0,0,0.42);text-decoration:none;white-space:nowrap;flex-shrink:0;}
+  .acl-eco-org:hover{color:rgba(0,0,0,0.72);}
+  .acl-eco-div{flex:1;height:1px;background:rgba(0,0,0,0.09);margin:0 16px;}
+  .acl-eco-links{display:flex;gap:18px;flex-shrink:0;}
+  .acl-eco-links a{font-family:'DM Mono',monospace;font-size:10.5px;color:rgba(0,0,0,0.28);text-decoration:none;white-space:nowrap;transition:color .15s;}
+  .acl-eco-links a:hover{color:rgba(0,0,0,0.62);}
+  .acl-eco-here{font-family:'DM Mono',monospace;font-size:10.5px;color:rgba(0,0,0,0.55);white-space:nowrap;}
+  @media(max-width:640px){.acl-eco-bar{display:none;}}
+
+  header{padding:6px 0 22px;}
+  .hero{background:var(--paper2); border:1px solid var(--border-d); border-top:7px solid var(--p5); border-radius:14px; padding:36px 28px 30px; margin-bottom:4px; text-align:center; display:flex; flex-direction:column; align-items:center;}
+  .eyebrow{font-family:'DM Mono', monospace; font-size:11.5px; letter-spacing:0.09em; text-transform:uppercase; color:var(--p5); margin-bottom:10px; font-weight:500;}
+  h1{font-family:'Libre Caslon Display', serif; font-size:38px; line-height:1.1; font-weight:400; letter-spacing:-0.01em; margin-bottom:12px; color:var(--ink);}
+  h1 em{font-style:italic; color:var(--p5);}
+  .subhead{color:var(--ink2); font-size:15.5px; max-width:600px; margin:0 auto;}
+  .rule{height:3px; margin:20px 0 0; border-radius:2px; background:linear-gradient(90deg, var(--p5) 0%, var(--p5) 100%); width:100%;}
+  .badge-row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:16px;}
+  .badge{display:inline-flex; align-items:center; gap:6px; font-family:'DM Mono',monospace; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; border-radius:100px; padding:5px 11px;}
+  .badge-neutral{background:rgba(43,140,126,.1); color:var(--p5); border:1px solid rgba(43,140,126,.3);}
+  .badge-live{background:rgba(61,122,87,.12); color:var(--cook); border:1px solid rgba(61,122,87,.32);}
+
+  .section-label{font-family:'DM Mono',monospace; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink3); margin:34px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--border-d);}
+  .section-sub{font-size:14px; color:var(--ink2); margin:-6px 0 18px;}
+
+  .card{background:var(--paper2); border:1px solid var(--border-d); border-radius:14px; padding:24px;}
+  .field-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px;}
+  @media(max-width:720px){.field-grid{grid-template-columns:1fr;}}
+  .field{margin-bottom:4px;}
+  .field-full{grid-column:1/-1;}
+  label.flabel{display:block; font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;}
+  .fhint{font-size:11.5px; color:var(--ink3); margin-top:4px; font-weight:400;}
+  input[type=time], input[type=number], select{
+    width:100%; font-family:inherit; font-size:14px; padding:9px 11px; border-radius:8px;
+    border:1px solid var(--border-d); background:#fff; color:var(--ink);
+  }
+  input[type=time]:focus, input[type=number]:focus, select:focus{outline:none; border-color:var(--p5);}
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;}
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600;
+    padding:7px 13px; border-radius:99px; border:1.5px solid var(--border-d); background:#fff; color:var(--ink2);
+    cursor:pointer; user-select:none; transition:all .15s;
+  }
+  .chip input{display:none;}
+  .chip.checked{background:var(--p5-bg); border-color:var(--p5-bd); color:var(--p5);}
+  .daychips{display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;}
+  .daychip{width:44px; text-align:center; font-size:12px; font-weight:700; padding:7px 0; border-radius:8px; border:1.5px solid var(--border-d); background:#fff; color:var(--ink2); cursor:pointer; user-select:none; transition:all .15s;}
+  .daychip.checked{background:rgba(168,65,47,.1); border-color:rgba(168,65,47,.32); color:var(--brick);}
+  .mode-select-row{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:4px;}
+  .btn-primary{
+    display:inline-flex; align-items:center; gap:8px; padding:13px 26px; background:var(--p5); color:#fff;
+    font-size:14px; font-weight:700; border:none; border-radius:99px; cursor:pointer; transition:all .2s; font-family:inherit;
+  }
+  .btn-primary:hover{background:#227067;}
+  .btn-secondary{
+    display:inline-flex; align-items:center; gap:7px; padding:10px 18px; background:#fff; color:var(--ink);
+    font-size:12.5px; font-weight:600; border:1.5px solid var(--border-d); border-radius:99px; cursor:pointer; transition:all .2s; font-family:inherit;
+  }
+  .btn-secondary:hover{border-color:var(--p5); color:var(--p5);}
+
+  #results{display:none;}
+  .sched-table{width:100%; border-collapse:collapse; font-size:13px; background:#fff; border-radius:12px; overflow:hidden; border:1px solid var(--border-d);}
+  .sched-table th{background:var(--paper3); font-family:'DM Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink3); padding:10px 8px; text-align:left;}
+  .sched-table td{padding:9px 8px; border-top:1px solid var(--border-d); vertical-align:top;}
+  .sched-table tr.busy-row td:first-child{color:var(--brick); font-weight:700;}
+  .meal-cell{display:flex; flex-direction:column; gap:3px; margin-bottom:6px;}
+  .meal-cell:last-child{margin-bottom:0;}
+  .meal-time{font-weight:600;}
+  .meal-note{font-size:11px; color:var(--ink3); font-style:italic;}
+  .mode-toggle{
+    display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    padding:2px 9px; border-radius:99px; border:1px solid; cursor:pointer; width:fit-content;
+  }
+  .mode-toggle.cook{background:var(--cook-bg); border-color:var(--cook-bd); color:var(--cook);}
+  .mode-toggle.order{background:var(--order-bg); border-color:var(--order-bd); color:var(--order);}
+  .table-scroll{overflow-x:auto;}
+
+  .shop-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:14px;}
+  @media(max-width:720px){.shop-grid{grid-template-columns:1fr;}}
+  .shop-card{background:#fff; border:1px solid var(--border-d); border-radius:12px; padding:16px 18px;}
+  .shop-card-title{font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em; font-family:'DM Mono',monospace;}
+  .shop-card ul{list-style:none; padding:0; margin:0;}
+  .shop-card li{font-size:13px; color:var(--ink2); padding:4px 0; display:flex; gap:8px;}
+  .shop-card li i{color:var(--p5); font-size:13px; margin-top:2px;}
+
+  .download-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:20px;}
+  .privacy-banner{display:flex; gap:10px; align-items:flex-start; background:var(--paper2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-top:34px; font-size:13px; color:var(--ink2);}
+  .privacy-banner i{color:var(--brick); font-size:16px; margin-top:1px; flex-shrink:0;}
+  .note-block{background:var(--p5-bg); border:1px solid var(--p5-bd); border-radius:10px; padding:12px 16px; margin-top:16px; font-size:12.5px; color:var(--ink2); line-height:1.6;}
+  .avoid-banner{display:none; gap:10px; align-items:flex-start; background:rgba(168,65,47,.08); border:1px solid rgba(168,65,47,.28); border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:12.5px; color:var(--ink2); line-height:1.6;}
+  .avoid-banner i{color:var(--brick); font-size:15px; margin-top:1px; flex-shrink:0;}
+  .copy-feedback{font-size:11.5px; color:var(--cook); font-weight:600; margin-left:6px;}
+
+  .acl-suite-footer{border-top:1px solid rgba(0,0,0,0.1);padding:28px 28px 24px;background:rgba(0,0,0,0.025);margin-top:46px;border-radius:14px;}
+  .acl-suite-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px 20px;max-width:960px;margin:0 auto 20px;}
+  .acl-suite-label{font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(0,0,0,0.28);margin-bottom:9px;}
+  .acl-suite-col a{display:block;font-size:12px;font-weight:500;color:rgba(0,0,0,0.38);text-decoration:none;margin-bottom:4px;}
+  .acl-suite-col a:hover{color:rgba(0,0,0,0.72);}
+  .acl-suite-here{display:block;font-size:12px;font-weight:500;color:rgba(0,0,0,0.58);margin-bottom:4px;}
+  .acl-suite-meta{border-top:1px solid rgba(0,0,0,0.08);padding-top:14px;display:flex;align-items:center;gap:10px;font-size:10.5px;color:rgba(0,0,0,0.3);max-width:960px;margin:0 auto;flex-wrap:wrap;}
+  .acl-suite-meta a{color:rgba(0,0,0,0.38);text-decoration:none;}
+  .acl-m-dot{color:rgba(0,0,0,0.13);}
+  @media(max-width:900px){.acl-suite-grid{grid-template-columns:repeat(2,1fr);}}
+  footer{margin-top:24px; font-size:11.5px; color:var(--ink3); text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="acl-eco-bar">
+  <a href="aricciviclabs.html" class="acl-eco-org">AricCivicLabs.Org</a>
+  <span class="acl-eco-div"></span>
+  <div class="acl-eco-links">
+    <a href="even_concept.html">Project: goo-goo overview</a>
+    <a href="civic_index.html">Civic &amp; Rights</a>
+    <span class="acl-eco-here">S1E1 · The Growl</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <header>
+    <div class="hero">
+      <div class="eyebrow">Project: goo-goo · Season 1, Episode 1 · "The Growl"</div>
+      <h1>The <em>Energy Rhythm</em> Planner</h1>
+      <p class="subhead">Tell it when your energy dips and how your week actually runs. It builds a weekly eat-by-this-time schedule and a starter shopping list — no wearables, no sensors, just a few honest questions.</p>
+      <div class="rule"></div>
+      <div class="badge-row">
+        <span class="badge badge-live"><i class="ti ti-circle-check"></i> Working build — try it now</span>
+        <span class="badge badge-neutral"><i class="ti ti-lock"></i> Nothing you enter is saved or sent anywhere</span>
+        <span class="badge badge-neutral"><i class="ti ti-shield-heart"></i> Wellness only — not medical advice</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="section-label">Tell it about your week</div>
+  <p class="section-sub">Everything below runs in your browser. Closing this tab clears it — nothing is stored.</p>
+
+  <div class="card">
+    <div class="field-grid">
+
+      <div class="field">
+        <label class="flabel">What time do you wake up?</label>
+        <input type="time" id="wakeTime" value="07:00">
+      </div>
+      <div class="field">
+        <label class="flabel">What time do you go to sleep?</label>
+        <input type="time" id="sleepTime" value="23:00">
+      </div>
+
+      <div class="field field-full">
+        <label class="flabel">How do you eat, structurally?</label>
+        <select id="mealStructure">
+          <option value="3meal">Three meals (breakfast, lunch, dinner)</option>
+          <option value="2meal">Two meals (lunch, dinner)</option>
+          <option value="if">Intermittent fasting window</option>
+        </select>
+      </div>
+
+      <div class="field" id="ifFields" style="display:none;">
+        <label class="flabel">Eating window start</label>
+        <input type="time" id="ifStart" value="13:00">
+      </div>
+      <div class="field" id="ifFields2" style="display:none;">
+        <label class="flabel">Eating window end</label>
+        <input type="time" id="ifEnd" value="21:00">
+      </div>
+
+      <div class="field field-full">
+        <label class="flabel">When do you usually hit an energy dip? (pick all that apply)</label>
+        <div class="chip-row">
+          <label class="chip" data-dip="midMorning"><input type="checkbox" value="midMorning"> Mid-morning (~10am)</label>
+          <label class="chip checked" data-dip="earlyAfternoon"><input type="checkbox" value="earlyAfternoon" checked> Early afternoon (~2pm)</label>
+          <label class="chip" data-dip="lateAfternoon"><input type="checkbox" value="lateAfternoon"> Late afternoon (~4:30pm)</label>
+          <label class="chip" data-dip="evening"><input type="checkbox" value="evening"> Evening (~8pm)</label>
+        </div>
+      </div>
+
+      <div class="field field-full">
+        <label class="flabel">
+          <label class="chip" style="padding-left:0;border:none;background:none;">
+            <input type="checkbox" id="useSnacks" checked> Add a small snack ~45 min before each dip
+          </label>
+        </label>
+        <div class="fhint">If unchecked, the nearest main meal shifts 30 minutes earlier instead of adding a snack.</div>
+      </div>
+
+      <div class="field field-full">
+        <label class="flabel">Which days are too busy to cook? (defaults flip to "order" on these days)</label>
+        <div class="daychips" id="busyDayChips">
+          <div class="daychip" data-day="Mon">Mon</div>
+          <div class="daychip" data-day="Tue">Tue</div>
+          <div class="daychip" data-day="Wed">Wed</div>
+          <div class="daychip" data-day="Thu">Thu</div>
+          <div class="daychip" data-day="Fri">Fri</div>
+          <div class="daychip" data-day="Sat">Sat</div>
+          <div class="daychip" data-day="Sun">Sun</div>
+        </div>
+      </div>
+
+      <div class="field field-full">
+        <label class="flabel">Default cook-or-order per meal (you can flip individual meals after generating)</label>
+        <div class="mode-select-row" id="defaultsRow">
+          <div>
+            <div class="fhint" style="margin:0 0 4px;">Breakfast / first meal</div>
+            <select data-mealkey="breakfast|meal1">
+              <option value="cook">Cook</option>
+              <option value="order">Order</option>
+              <option value="flexible" selected>Flexible (cook unless busy day)</option>
+            </select>
+          </div>
+          <div>
+            <div class="fhint" style="margin:0 0 4px;">Lunch</div>
+            <select data-mealkey="lunch">
+              <option value="cook">Cook</option>
+              <option value="order">Order</option>
+              <option value="flexible" selected>Flexible (cook unless busy day)</option>
+            </select>
+          </div>
+          <div>
+            <div class="fhint" style="margin:0 0 4px;">Dinner / last meal</div>
+            <select data-mealkey="dinner|meal2">
+              <option value="cook">Cook</option>
+              <option value="order">Order</option>
+              <option value="flexible" selected>Flexible (cook unless busy day)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="field field-full">
+        <label class="flabel">Food preferences (shapes the shopping list categories)</label>
+        <select id="dietStyle">
+          <option value="none">No particular style</option>
+          <option value="vegetarian">Vegetarian</option>
+          <option value="vegan">Vegan</option>
+          <option value="pescatarian">Pescatarian</option>
+        </select>
+        <div class="fhint" style="margin-top:10px;">Anything to avoid or work around? (pick any, or add your own below)</div>
+        <div class="chip-row">
+          <label class="chip" data-avoid="peanuts"><input type="checkbox" value="peanuts"> Peanuts</label>
+          <label class="chip" data-avoid="treenuts"><input type="checkbox" value="treenuts"> Tree nuts</label>
+          <label class="chip" data-avoid="dairy"><input type="checkbox" value="dairy"> Dairy</label>
+          <label class="chip" data-avoid="gluten"><input type="checkbox" value="gluten"> Gluten</label>
+          <label class="chip" data-avoid="shellfish"><input type="checkbox" value="shellfish"> Shellfish</label>
+          <label class="chip" data-avoid="eggs"><input type="checkbox" value="eggs"> Eggs</label>
+          <label class="chip" data-avoid="soy"><input type="checkbox" value="soy"> Soy</label>
+        </div>
+        <input type="text" id="avoidOther" placeholder="Anything else? e.g. cilantro, sesame — comma separated" style="margin-top:10px;">
+        <div class="fhint">This isn't recipe-level filtering yet (that needs real ingredient data — Episode 3, "The Delivery"). For now it adjusts the shopping-list categories and adds a clear reminder note on what to avoid.</div>
+      </div>
+
+      <div class="field">
+        <label class="flabel">Household size (for the shopping list)</label>
+        <input type="number" id="householdSize" min="1" max="12" value="2">
+      </div>
+
+    </div>
+
+    <div style="margin-top:22px;">
+      <button class="btn-primary" onclick="generate()"><i class="ti ti-sparkles"></i> Build my schedule</button>
+    </div>
+  </div>
+
+  <div id="results">
+
+    <div class="section-label" style="margin-top:40px;">Your weekly schedule</div>
+    <p class="section-sub">Click any Cook/Order tag to flip it — downloads reflect your changes.</p>
+    <div class="table-scroll">
+      <table class="sched-table" id="schedTable"></table>
+    </div>
+
+    <div class="note-block"><i class="ti ti-info-circle"></i> Times are a starting-point estimate from simple rules (wake/sleep time, meal spacing, and shifting fuel ahead of your stated dips) — not a prediction from your actual biometrics. That's the difference between this build (Season 1) and the optional Season 2 ("Awakening"), which would read a real glucose trend instead of asking you to guess it.</div>
+
+    <div class="section-label">Starter shopping list</div>
+    <p class="section-sub" id="shopSub"></p>
+    <div class="avoid-banner" id="avoidNoteBanner"><i class="ti ti-alert-circle"></i> <span></span></div>
+    <div class="shop-grid" id="shopGrid"></div>
+    <div class="note-block"><i class="ti ti-info-circle"></i> This is a generic, scaled starter list — not matched to specific recipes yet. Real recipe-to-ingredient matching (via Spoonacular) and one-tap cart building (via Instacart) is Episode 3, "The Delivery," not built yet.</div>
+
+    <div class="download-row">
+      <button class="btn-secondary" onclick="downloadSchedule()"><i class="ti ti-file-text"></i> Download schedule (.txt)</button>
+      <button class="btn-secondary" onclick="downloadShoppingList()"><i class="ti ti-file-text"></i> Download shopping list (.txt)</button>
+      <button class="btn-secondary" onclick="downloadIcs()"><i class="ti ti-calendar-plus"></i> Add to calendar (.ics)</button>
+      <button class="btn-secondary" onclick="copyShoppingList()"><i class="ti ti-copy"></i> Copy shopping list</button>
+      <button class="btn-secondary" id="shareBtn" onclick="shareShoppingList()" style="display:none;"><i class="ti ti-share-2"></i> Share to an app</button>
+      <span class="copy-feedback" id="copyFeedback"></span>
+    </div>
+    <div class="note-block"><i class="ti ti-bell"></i> The .ics file is the real version of the "Calendar push" reminder channel from the roadmap: import it into Google or Apple Calendar and your own calendar app's notifications become the reminder — no app of ours required.</div>
+    <div class="note-block"><i class="ti ti-plug-connected"></i> There's no one-tap "send straight into Instacart's cart" yet — that needs a backend calling their API (Episode 3). What works today, no backend required: <strong>Copy</strong> the list and paste it into whatever app you already use — Instacart, AnyList, Google Keep, Reminders, Bring! — most accept a pasted list and split it into items automatically. On phones with share support, <strong>Share to an app</strong> hands the text straight to your chosen app instead.</div>
+
+  </div>
+
+  <div class="privacy-banner">
+    <i class="ti ti-shield-lock"></i>
+    <div>Nothing typed on this page is saved, sent to a server, or tracked. All scheduling happens in your browser with plain rules — refreshing the page clears everything.</div>
+  </div>
+
+  <div class="acl-suite-footer">
+    <div class="acl-suite-grid">
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Work-Life Enablement</div>
+        <a href="#">receipts.</a>
+        <a href="#">Transitions</a>
+      </div>
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Social Enablement</div>
+        <a href="#">InAble</a>
+      </div>
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Workforce Management</div>
+        <a href="#">MeshForce</a>
+        <a href="#">The Seam</a>
+      </div>
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Civic &amp; Rights · Free</div>
+        <a href="civic_index.html">Civic &amp; Rights Index</a>
+      </div>
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Physical &amp; Metabolic · Proposed</div>
+        <a href="even_concept.html">Project: goo-goo overview</a>
+        <span class="acl-suite-here">S1E1 · The Growl (this tool)</span>
+      </div>
+    </div>
+    <div class="acl-suite-meta">
+      <a href="aricciviclabs.html">AricCivicLabs.Org</a>
+      <span class="acl-m-dot">·</span>
+      <span>Concept build — not a finished product</span>
+      <span class="acl-m-dot">·</span>
+      <span>© 2026 AricCivicLabs.Org</span>
+    </div>
+  </div>
+
+  <footer>
+    Built July 2026 as part of Project: goo-goo, Season 1 ("The Growl"). Not medical advice — a wellness scheduling tool only.
+  </footer>
+
+</div>
+
+<script>
+// ---------- time helpers ----------
+function parseTime(hhmm){
+  var parts = hhmm.split(':');
+  return parseInt(parts[0],10) * 60 + parseInt(parts[1],10);
+}
+function formatTime(mins){
+  mins = ((mins % 1440) + 1440) % 1440;
+  var h = Math.floor(mins/60), m = mins % 60;
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  return h + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+
+var DIP_TIMES = {
+  midMorning: { label: 'Mid-morning', mins: 10*60 },
+  earlyAfternoon: { label: 'Early afternoon', mins: 14*60 },
+  lateAfternoon: { label: 'Late afternoon', mins: 16*60+30 },
+  evening: { label: 'Evening', mins: 20*60 }
+};
+var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var JS_WEEKDAY = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:0 };
+
+// ---------- schedule logic ----------
+function buildBaseMeals(input){
+  var wake = parseTime(input.wakeTime);
+  var sleep = parseTime(input.sleepTime);
+  if (sleep <= wake) sleep += 1440; // sleeping after midnight
+  var meals = [];
+  if (input.mealStructure === '3meal'){
+    var breakfast = wake + 60;
+    var dinner = sleep - 180;
+    var lunch = Math.round((breakfast + dinner) / 2);
+    var lunchMin = Math.max(breakfast + 120, 11*60);
+    var lunchMax = Math.min(dinner - 120, 14*60 + 30);
+    if (lunchMax >= lunchMin) lunch = Math.min(Math.max(lunch, lunchMin), lunchMax);
+    meals = [
+      { key:'breakfast', label:'Breakfast', mins:breakfast },
+      { key:'lunch', label:'Lunch', mins:lunch },
+      { key:'dinner', label:'Dinner', mins:dinner }
+    ];
+  } else if (input.mealStructure === '2meal'){
+    meals = [
+      { key:'lunch', label:'Lunch', mins: wake + 240 },
+      { key:'dinner', label:'Dinner', mins: sleep - 180 }
+    ];
+  } else if (input.mealStructure === 'if'){
+    var ws = parseTime(input.ifStart);
+    var we = parseTime(input.ifEnd);
+    if (we <= ws) we += 1440;
+    meals = [
+      { key:'meal1', label:'First meal', mins: ws },
+      { key:'meal2', label:'Last meal', mins: we - 60 }
+    ];
+  }
+  return meals;
+}
+
+function applyDipFueling(meals, selectedDips, useSnacks){
+  var notesByMeal = {};
+  var snacks = [];
+  selectedDips.forEach(function(dipKey){
+    var dip = DIP_TIMES[dipKey];
+    if (!dip) return;
+    if (useSnacks){
+      snacks.push({ key:'snack-'+dipKey, label:dip.label+' snack', mins: dip.mins - 45, note: 'Pre-fuel for the '+dip.label.toLowerCase()+' dip' });
+    } else {
+      var nearest = null;
+      meals.forEach(function(m){
+        if (m.mins < dip.mins && (nearest === null || m.mins > nearest.mins)) nearest = m;
+      });
+      if (nearest){
+        notesByMeal[nearest.key] = 'Shifted earlier to fuel ahead of the '+dip.label.toLowerCase()+' dip';
+        nearest.mins -= 30;
+      }
+    }
+  });
+  var all = meals.concat(snacks).sort(function(a,b){ return a.mins - b.mins; });
+  all = all.map(function(m){ return Object.assign({}, m, { note: m.note || notesByMeal[m.key] || null }); });
+  return all;
+}
+
+function buildWeek(input){
+  var baseMeals = applyDipFueling(buildBaseMeals(input), input.dips, input.useSnacks);
+  return DAYS.map(function(day){
+    var isBusy = input.busyDays.indexOf(day) !== -1;
+    var slots = baseMeals.map(function(m){
+      var mode = (input.defaults && input.defaults[m.key]) || 'flexible';
+      if (mode === 'flexible') mode = isBusy ? 'order' : 'cook';
+      if (isBusy && mode === 'cook') mode = 'order';
+      return Object.assign({}, m, { mode: mode, time: formatTime(m.mins) });
+    });
+    return { day: day, isBusy: isBusy, slots: slots };
+  });
+}
+
+function proteinWordingFor(dietStyle, avoidSet){
+  if (dietStyle === 'vegan') return 'plant protein (tofu, tempeh, legumes, seitan)';
+  if (dietStyle === 'vegetarian') return 'vegetarian protein (eggs, dairy, legumes, tofu)' + (avoidSet.eggs ? ' — skip eggs' : '');
+  if (dietStyle === 'pescatarian') return 'fish/seafood, legumes, tofu' + (avoidSet.eggs ? '' : ', eggs');
+  var base = 'protein portions (meat/fish/tofu/eggs)';
+  if (avoidSet.eggs) base = 'protein portions (meat/fish/tofu — no eggs)';
+  return base;
+}
+
+function computeCategories(cookMealCount, householdSize, dietStyle, avoidList){
+  var units = cookMealCount * householdSize;
+  var avoidSet = {};
+  avoidList.forEach(function(a){ avoidSet[a] = true; });
+  var categories = [
+    { name:'Produce', items:['~'+Math.ceil(units*0.6)+' servings mixed vegetables', '~'+Math.ceil(units*0.3)+' servings fruit'] },
+    { name:'Protein', items:['~'+Math.ceil(units*0.5)+' '+proteinWordingFor(dietStyle, avoidSet)] },
+    { name:'Grains & pantry', items:[
+        '~'+Math.ceil(units*0.4)+' servings '+(avoidSet.gluten ? 'gluten-free grains (rice, quinoa, GF oats)' : 'grains/starch'),
+        (avoidSet.peanuts || avoidSet.treenuts) ? 'Cooking oil, spices, staples on hand — check labels for nuts' : 'Cooking oil, spices, staples on hand'
+      ] }
+  ];
+  if (dietStyle !== 'vegan' && !avoidSet.dairy){
+    categories.push({ name:'Dairy', items:['~'+Math.ceil(units*0.2)+' servings dairy/alt-dairy'] });
+  } else {
+    categories.push({ name:'Dairy alternatives', items:['~'+Math.ceil(units*0.2)+' servings plant milk/yogurt (oat, soy, almond — check for nut avoidance)'] });
+  }
+  return categories;
+}
+
+function buildAvoidNote(dietStyle, avoidChips, avoidOther){
+  var labels = avoidChips.map(function(a){ return AVOID_LABELS[a] || a; });
+  var all = labels.concat(avoidOther);
+  var dietLabel = dietStyle !== 'none' ? dietStyle : null;
+  if (!dietLabel && all.length === 0) return null;
+  var parts = [];
+  if (dietLabel) parts.push(dietLabel);
+  if (all.length) parts.push('avoiding: ' + all.join(', '));
+  return 'Built for ' + parts.join(' · ') + '. This adjusts categories above, but isn\'t ingredient-level checking yet — read labels, especially for allergies.';
+}
+
+function buildShoppingList(week, householdSize, dietStyle, avoidChips, avoidOther){
+  var cookMealCount = 0;
+  week.forEach(function(d){ d.slots.forEach(function(s){ if (s.mode === 'cook' && s.key.indexOf('snack') !== 0) cookMealCount++; }); });
+  var avoidList = (avoidChips || []).concat(avoidOther || []);
+  return {
+    cookMealCount: cookMealCount,
+    householdSize: householdSize,
+    avoidNote: buildAvoidNote(dietStyle, avoidChips || [], avoidOther || []),
+    categories: computeCategories(cookMealCount, householdSize, dietStyle, avoidList)
+  };
+}
+
+// ---------- UI wiring ----------
+document.querySelectorAll('.chip[data-dip]').forEach(function(chip){
+  chip.addEventListener('click', function(){ chip.classList.toggle('checked'); });
+});
+document.querySelectorAll('.chip[data-avoid]').forEach(function(chip){
+  chip.addEventListener('click', function(){ chip.classList.toggle('checked'); });
+});
+document.querySelectorAll('.daychip').forEach(function(chip){
+  chip.addEventListener('click', function(){ chip.classList.toggle('checked'); });
+});
+document.getElementById('mealStructure').addEventListener('change', function(){
+  var isIf = this.value === 'if';
+  document.getElementById('ifFields').style.display = isIf ? 'block' : 'none';
+  document.getElementById('ifFields2').style.display = isIf ? 'block' : 'none';
+});
+
+var currentWeek = null;
+var currentShop = null;
+var overrides = {}; // "day|key" -> mode
+
+var AVOID_LABELS = { peanuts:'peanuts', treenuts:'tree nuts', dairy:'dairy', gluten:'gluten', shellfish:'shellfish', eggs:'eggs', soy:'soy' };
+
+function collectInput(){
+  var dips = Array.from(document.querySelectorAll('.chip[data-dip].checked')).map(function(c){ return c.getAttribute('data-dip'); });
+  var busyDays = Array.from(document.querySelectorAll('.daychip.checked')).map(function(c){ return c.getAttribute('data-day'); });
+  var defaults = {};
+  document.querySelectorAll('#defaultsRow select').forEach(function(sel){
+    var keys = sel.getAttribute('data-mealkey').split('|');
+    keys.forEach(function(k){ defaults[k] = sel.value; });
+  });
+  var avoidChips = Array.from(document.querySelectorAll('.chip[data-avoid].checked')).map(function(c){ return c.getAttribute('data-avoid'); });
+  var avoidOtherRaw = document.getElementById('avoidOther').value || '';
+  var avoidOther = avoidOtherRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  return {
+    wakeTime: document.getElementById('wakeTime').value,
+    sleepTime: document.getElementById('sleepTime').value,
+    mealStructure: document.getElementById('mealStructure').value,
+    ifStart: document.getElementById('ifStart').value,
+    ifEnd: document.getElementById('ifEnd').value,
+    dips: dips,
+    useSnacks: document.getElementById('useSnacks').checked,
+    busyDays: busyDays,
+    defaults: defaults,
+    dietStyle: document.getElementById('dietStyle').value,
+    avoidChips: avoidChips,
+    avoidOther: avoidOther,
+    householdSize: parseInt(document.getElementById('householdSize').value,10) || 1
+  };
+}
+
+function generate(){
+  overrides = {};
+  var input = collectInput();
+  currentWeek = buildWeek(input);
+  currentShop = buildShoppingList(currentWeek, input.householdSize, input.dietStyle, input.avoidChips, input.avoidOther);
+  renderSchedule();
+  renderShoppingList();
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior:'smooth' });
+}
+
+function effectiveMode(day, key, storedMode){
+  var ovKey = day + '|' + key;
+  return overrides.hasOwnProperty(ovKey) ? overrides[ovKey] : storedMode;
+}
+
+function toggleOverride(day, key, storedMode){
+  var ovKey = day + '|' + key;
+  var current = overrides.hasOwnProperty(ovKey) ? overrides[ovKey] : storedMode;
+  overrides[ovKey] = (current === 'cook') ? 'order' : 'cook';
+  renderSchedule();
+  renderShoppingList();
+}
+
+function renderSchedule(){
+  var table = document.getElementById('schedTable');
+  var html = '<thead><tr><th>Day</th>';
+  currentWeek[0].slots.forEach(function(s){ html += '<th>'+s.label+'</th>'; });
+  html += '</tr></thead><tbody>';
+  currentWeek.forEach(function(d){
+    html += '<tr class="'+(d.isBusy ? 'busy-row' : '')+'"><td>'+d.day+(d.isBusy ? ' <span class="fhint">(busy)</span>' : '')+'</td>';
+    d.slots.forEach(function(s){
+      var mode = effectiveMode(d.day, s.key, s.mode);
+      html += '<td><div class="meal-cell">'
+        + '<span class="meal-time">'+s.time+'</span>'
+        + '<span class="mode-toggle '+mode+'" onclick="toggleOverride(\''+d.day+'\',\''+s.key+'\',\''+s.mode+'\')">'+mode+'</span>'
+        + (s.note ? '<span class="meal-note">'+s.note+'</span>' : '')
+        + '</div></td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function currentShopWithOverrides(){
+  var input = collectInput();
+  var cookMealCount = 0;
+  currentWeek.forEach(function(d){
+    d.slots.forEach(function(s){
+      if (s.key.indexOf('snack') === 0) return;
+      var mode = effectiveMode(d.day, s.key, s.mode);
+      if (mode === 'cook') cookMealCount++;
+    });
+  });
+  var avoidList = (input.avoidChips || []).concat(input.avoidOther || []);
+  return {
+    cookMealCount: cookMealCount,
+    householdSize: input.householdSize,
+    avoidNote: buildAvoidNote(input.dietStyle, input.avoidChips || [], input.avoidOther || []),
+    categories: computeCategories(cookMealCount, input.householdSize, input.dietStyle, avoidList)
+  };
+}
+
+function renderShoppingList(){
+  currentShop = currentShopWithOverrides();
+  document.getElementById('shopSub').textContent = 'Scaled for ' + currentShop.cookMealCount + ' home-cooked meals this week across ' + currentShop.householdSize + ' people.';
+  var grid = document.getElementById('shopGrid');
+  grid.innerHTML = currentShop.categories.map(function(cat){
+    return '<div class="shop-card"><div class="shop-card-title">'+cat.name+'</div><ul>'
+      + cat.items.map(function(item){ return '<li><i class="ti ti-square"></i>'+item+'</li>'; }).join('')
+      + '</ul></div>';
+  }).join('');
+  var noteEl = document.getElementById('avoidNoteBanner');
+  if (currentShop.avoidNote){
+    noteEl.style.display = 'flex';
+    noteEl.querySelector('span').textContent = currentShop.avoidNote;
+  } else {
+    noteEl.style.display = 'none';
+  }
+}
+
+function triggerDownload(filename, text){
+  var blob = new Blob([text], { type:'text/plain' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function downloadSchedule(){
+  var lines = ['Project: goo-goo — S1E1 "The Growl" — Weekly schedule', ''];
+  currentWeek.forEach(function(d){
+    lines.push(d.day + (d.isBusy ? ' (busy day)' : ''));
+    d.slots.forEach(function(s){
+      var mode = effectiveMode(d.day, s.key, s.mode);
+      lines.push('  ' + s.time + ' — ' + s.label + ' [' + mode.toUpperCase() + ']' + (s.note ? ' — ' + s.note : ''));
+    });
+    lines.push('');
+  });
+  triggerDownload('goo-goo_schedule.txt', lines.join('\n'));
+}
+
+function shoppingListText(){
+  var shop = currentShopWithOverrides();
+  var lines = ['Project: goo-goo — Starter shopping list', 'Scaled for ' + shop.cookMealCount + ' home-cooked meals, ' + shop.householdSize + ' people'];
+  if (shop.avoidNote) lines.push(shop.avoidNote);
+  lines.push('');
+  shop.categories.forEach(function(cat){
+    lines.push(cat.name + ':');
+    cat.items.forEach(function(item){ lines.push('  - ' + item); });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function downloadShoppingList(){
+  triggerDownload('goo-goo_shopping_list.txt', shoppingListText());
+}
+
+function flashCopyFeedback(msg){
+  var el = document.getElementById('copyFeedback');
+  el.textContent = msg;
+  setTimeout(function(){ if (el.textContent === msg) el.textContent = ''; }, 3000);
+}
+
+function copyShoppingList(){
+  var text = shoppingListText();
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      flashCopyFeedback('Copied — paste it into Instacart, AnyList, Keep, or any list app.');
+    }).catch(function(){
+      flashCopyFeedback('Copy blocked by the browser — try the download button instead.');
+    });
+  } else {
+    flashCopyFeedback('Clipboard not available here — try the download button instead.');
+  }
+}
+
+function shareShoppingList(){
+  var text = shoppingListText();
+  if (navigator.share){
+    navigator.share({ title: 'Project: goo-goo shopping list', text: text }).catch(function(){});
+  } else {
+    copyShoppingList();
+  }
+}
+
+if (typeof navigator !== 'undefined' && navigator.share){
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('shareBtn').style.display = 'inline-flex';
+  });
+}
+
+function icsDate(y,mo,d,h,mi){
+  function p(n,len){ return String(n).padStart(len||2,'0'); }
+  return '' + y + p(mo) + p(d) + 'T' + p(h) + p(mi) + '00';
+}
+
+function nextDateForWeekday(weekdayIndex){
+  var today = new Date();
+  var todayJsDay = today.getDay(); // 0=Sun..6=Sat
+  var diff = (weekdayIndex - todayJsDay + 7) % 7;
+  var d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff);
+  return d;
+}
+
+function downloadIcs(){
+  var lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//AricCivicLabs//Project goo-goo S1E1//EN','CALSCALE:GREGORIAN'];
+  var stamp = icsDate(new Date().getUTCFullYear(),(new Date().getUTCMonth()+1),new Date().getUTCDate(),new Date().getUTCHours(),new Date().getUTCMinutes());
+  var uidCounter = 0;
+  var BYDAY = { Mon:'MO', Tue:'TU', Wed:'WE', Thu:'TH', Fri:'FR', Sat:'SA', Sun:'SU' };
+  currentWeek.forEach(function(d){
+    var jsWeekday = JS_WEEKDAY[d.day];
+    var dt = nextDateForWeekday(jsWeekday);
+    d.slots.forEach(function(s){
+      if (s.key.indexOf('snack') === 0 && !document.getElementById('useSnacks').checked) return;
+      var mode = effectiveMode(d.day, s.key, s.mode);
+      var h = Math.floor(((s.mins % 1440)+1440)%1440 / 60);
+      var mi = ((s.mins % 1440)+1440)%1440 % 60;
+      uidCounter++;
+      lines.push('BEGIN:VEVENT');
+      lines.push('UID:googoo-s1e1-' + d.day + '-' + s.key + '-' + uidCounter + '@aricciviclabs.org');
+      lines.push('DTSTAMP:' + stamp + 'Z');
+      lines.push('DTSTART:' + icsDate(dt.getFullYear(), dt.getMonth()+1, dt.getDate(), h, mi));
+      lines.push('RRULE:FREQ=WEEKLY;BYDAY=' + BYDAY[d.day]);
+      lines.push('SUMMARY:' + s.label + ' — ' + mode.toUpperCase() + ' (goo-goo)');
+      lines.push('DESCRIPTION:Project: goo-goo reminder' + (s.note ? ' — ' + s.note : ''));
+      lines.push('END:VEVENT');
+    });
+  });
+  lines.push('END:VCALENDAR');
+  triggerDownload('goo-goo_reminders.ics', lines.join('\r\n'));
+}
+</script>
+
+</body>
+</html>
