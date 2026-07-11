@@ -1,6 +1,12 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "googoo-dev.aricciviclabs.org" }],
+      "destination": "/even_concept.html",
+      "permanent": false
+    },
+    {
       "source": "/even_concept.html",
       "has": [{ "type": "host", "value": "googoo.aricciviclabs.org" }],
       "destination": "https://googoo-dev.aricciviclabs.org/",
@@ -8,11 +14,6 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/",
-      "has": [{ "type": "host", "value": "googoo-dev.aricciviclabs.org" }],
-      "destination": "/even_concept.html"
-    },
     { "source": "/", "destination": "/goo_goo_home.html" },
     { "source": "/s1e1", "destination": "/goo_goo_s1e1_energy_rhythm_planner.html" }
   ]
