@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light only">
+<title>Project: goo-goo (ぐーぐー) — Pillar V Concept · AricCivicLabs</title>
+<meta name="description" content="Concept mockup: Project: goo-goo — a new AricCivicLabs pillar that plans meals around your body's real energy rhythm, from a simple weekly planner today to a fully automated biometric-to-delivery loop.">
+<link rel="canonical" href="https://googoo.aricciviclabs.org/">
+<meta property="og:title" content="Project: goo-goo — AricCivicLabs">
+<meta property="og:description" content="A new AricCivicLabs pillar that plans meals around your body's real energy rhythm — concept, roadmap, and the first working tool.">
+<meta property="og:url" content="https://googoo.aricciviclabs.org/">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6EFDC; --paper2:#FFFBF1; --paper3:#EFE5C9;
+    --ink:#2A2018; --ink2:#6E5F4A; --ink3:#746352;
+    --navy:#1F3A5C; --navy-l:#2F5380; --brick:#A8412F; --brick-l:#C25A45;
+    --gold:#8F6418; --gold-l:#C99A40; --green:#3D7A57; --green-l:#4F9268;
+    --purple:#7B5EA7; --purple-l:#9578C2;
+    --p5:#2B8C7E; --p5-bg:rgba(43,140,126,.1); --p5-bd:rgba(43,140,126,.3);
+    --border:#E2D2A8; --border-d:#D3C193;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{color-scheme:light; background-color:#F6EFDC; min-height:100%;}
+  body{
+    background-color:#F6EFDC; color:var(--ink);
+    font-family:'DM Sans', sans-serif; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh; min-height:100dvh;
+  }
+  .serif{font-family:'Libre Caslon Display', serif;}
+  .mono{font-family:'DM Mono', monospace;}
+  .container{max-width:980px; margin:0 auto; padding:28px 20px 90px;}
+
+  .acl-eco-bar{display:flex;align-items:center;padding:0 28px;height:34px;background:rgba(0,0,0,0.022);border-bottom:1px solid rgba(0,0,0,0.09);}
+  .acl-eco-org{font-family:'DM Mono',monospace;font-size:10.5px;font-weight:500;color:rgba(0,0,0,0.42);text-decoration:none;white-space:nowrap;flex-shrink:0;}
+  .acl-eco-org:hover{color:rgba(0,0,0,0.72);}
+  .acl-eco-div{flex:1;height:1px;background:rgba(0,0,0,0.09);margin:0 16px;}
+  .acl-eco-links{display:flex;gap:18px;flex-shrink:0;}
+  .acl-eco-links a{font-family:'DM Mono',monospace;font-size:10.5px;color:rgba(0,0,0,0.28);text-decoration:none;white-space:nowrap;transition:color .15s;}
+  .acl-eco-links a:hover{color:rgba(0,0,0,0.62);}
+  .acl-eco-here{font-family:'DM Mono',monospace;font-size:10.5px;color:rgba(0,0,0,0.55);white-space:nowrap;}
+  @media(max-width:640px){.acl-eco-bar{display:none;}}
+
+  header{padding:6px 0 22px;}
+  .hero{
+    background:var(--paper2); border:1px solid var(--border-d); border-top:7px solid var(--p5);
+    border-radius:14px; padding:40px 28px 34px; margin-bottom:4px;
+    text-align:center; display:flex; flex-direction:column; align-items:center;
+  }
+  .eyebrow{font-family:'DM Mono', monospace; font-size:11.5px; letter-spacing:0.09em; text-transform:uppercase; color:var(--p5); margin-bottom:10px; font-weight:500;}
+  h1{font-family:'Libre Caslon Display', serif; font-size:44px; line-height:1.07; font-weight:400; letter-spacing:-0.01em; margin-bottom:14px; color:var(--ink);}
+  h1 em{font-style:italic; color:var(--p5);}
+  .subhead{color:var(--ink2); font-size:16.5px; max-width:600px; margin:0 auto;}
+  .rule{height:3px; margin:22px 0 0; border-radius:2px; background:linear-gradient(90deg, var(--p5) 0%, var(--p5) 100%);}
+
+  .badge-row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:18px;}
+  .badge{
+    display:inline-flex; align-items:center; gap:6px; font-family:'DM Mono',monospace;
+    font-size:11px; letter-spacing:0.05em; text-transform:uppercase;
+    border-radius:100px; padding:5px 11px;
+  }
+  .badge-concept{background:rgba(168,65,47,.1); color:var(--brick); border:1px solid rgba(168,65,47,.3);}
+  .badge-neutral{background:rgba(43,140,126,.1); color:var(--p5); border:1px solid rgba(43,140,126,.3);}
+  .badge-ova{background:rgba(143,100,24,.12); color:var(--gold); border:1px solid rgba(143,100,24,.32);}
+
+  .mission-block{
+    background:var(--paper2); border:1px solid var(--border-d); border-radius:12px;
+    padding:18px 22px; margin-top:18px; font-size:14px; color:var(--ink2); text-align:left;
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .mission-block i{color:var(--p5); font-size:18px; margin-top:2px; flex-shrink:0;}
+  .mission-block strong{color:var(--ink);}
+
+  .section-label{
+    font-family:'DM Mono',monospace; font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink3); margin:36px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--border-d);
+  }
+  .section-sub{font-size:14px; color:var(--ink2); margin:-6px 0 18px;}
+
+  /* Episode 1 spotlight */
+  .spotlight{
+    background:var(--paper2); border:1px solid var(--border-d); border-radius:14px;
+    padding:26px 26px 24px; position:relative; overflow:hidden;
+  }
+  .spotlight::before{content:''; position:absolute; top:0; left:0; right:0; height:5px; background:var(--p5);}
+  .spotlight-top{display:flex; align-items:flex-start; gap:14px; margin-bottom:12px;}
+  .spotlight-icon{width:52px; height:52px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:var(--p5-bg);}
+  .spotlight-icon i{font-size:26px; color:var(--p5);}
+  .spotlight-title{font-family:'Libre Caslon Display', serif; font-size:23px; font-weight:400; color:var(--ink); margin-bottom:3px;}
+  .spotlight-tag{font-family:'DM Mono',monospace; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--p5); font-weight:600;}
+  .spotlight-desc{font-size:14.5px; color:var(--ink2); line-height:1.65; margin-bottom:14px;}
+  .spotlight-list{display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; margin-bottom:16px;}
+  .spotlight-list div{font-size:13px; color:var(--ink2); display:flex; gap:8px; align-items:flex-start;}
+  .spotlight-list i{color:var(--p5); font-size:14px; margin-top:3px; flex-shrink:0;}
+  .spotlight-cta{display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--ink3); font-style:italic;}
+
+  /* Roadmap timeline */
+  .roadmap{display:flex; flex-direction:column; gap:0;}
+  .phase{
+    display:grid; grid-template-columns:64px 1fr; gap:18px;
+    padding:16px 0; border-bottom:1px dashed var(--border-d);
+  }
+  .phase:last-child{border-bottom:none;}
+  .phase-num{
+    font-family:'DM Mono',monospace; font-size:11px; font-weight:700; color:var(--paper2);
+    background:var(--ink3); width:44px; height:44px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.1;
+  }
+  .phase.now .phase-num{background:var(--p5);}
+  .phase-title{font-family:'Libre Caslon Display', serif; font-size:17px; color:var(--ink); margin-bottom:4px;}
+  .phase-title .tag{font-family:'DM Mono',monospace; font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--p5); background:var(--p5-bg); border:1px solid var(--p5-bd); border-radius:99px; padding:2px 8px; margin-left:8px; vertical-align:middle;}
+  .phase-desc{font-size:13.5px; color:var(--ink2); line-height:1.6;}
+
+  /* Reality check cards */
+  .reality-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+  @media(max-width:720px){.reality-grid{grid-template-columns:1fr;} .spotlight-list{grid-template-columns:1fr;}}
+  .reality-card{background:var(--paper2); border:1px solid var(--border-d); border-radius:12px; padding:16px 18px;}
+  .reality-card i{color:var(--p5); font-size:16px; margin-bottom:8px; display:block;}
+  .reality-card-title{font-size:13px; font-weight:700; color:var(--ink); margin-bottom:5px;}
+  .reality-card-body{font-size:12.5px; color:var(--ink2); line-height:1.6;}
+
+  .privacy-banner{
+    display:flex; gap:10px; align-items:flex-start;
+    background:var(--paper2); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin-top:34px; font-size:13px; color:var(--ink2);
+  }
+  .privacy-banner i{color:var(--brick); font-size:16px; margin-top:1px; flex-shrink:0;}
+
+  /* Eyecatch divider (anime-style bumper) */
+  .eyecatch{
+    display:flex; align-items:center; gap:14px; margin:40px 0 8px;
+  }
+  .eyecatch::before, .eyecatch::after{content:''; flex:1; height:1px; background:var(--border-d);}
+  .eyecatch-label{
+    font-family:'DM Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--p5); background:var(--p5-bg); border:1px solid var(--p5-bd); border-radius:99px; padding:5px 14px; white-space:nowrap;
+  }
+
+  .acl-suite-footer{border-top:1px solid rgba(0,0,0,0.1);padding:28px 28px 24px;background:rgba(0,0,0,0.025);margin-top:46px;border-radius:14px;}
+  .acl-suite-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px 20px;max-width:960px;margin:0 auto 20px;}
+  .acl-suite-label{font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(0,0,0,0.28);margin-bottom:9px;}
+  .acl-suite-col a{display:block;font-size:12px;font-weight:500;color:rgba(0,0,0,0.38);text-decoration:none;margin-bottom:4px;transition:color .15s;}
+  .acl-suite-col a:hover{color:rgba(0,0,0,0.72);}
+  .acl-suite-here{display:block;font-size:12px;font-weight:500;color:rgba(0,0,0,0.58);margin-bottom:4px;}
+  .acl-suite-meta{border-top:1px solid rgba(0,0,0,0.08);padding-top:14px;display:flex;align-items:center;gap:10px;font-size:10.5px;color:rgba(0,0,0,0.3);max-width:960px;margin:0 auto;flex-wrap:wrap;}
+  .acl-suite-meta a{color:rgba(0,0,0,0.38);text-decoration:none;transition:color .15s;}
+  .acl-suite-meta a:hover{color:rgba(0,0,0,0.7);}
+  .acl-m-dot{color:rgba(0,0,0,0.13);}
+  @media(max-width:900px){.acl-suite-grid{grid-template-columns:repeat(2,1fr);}}
+
+  footer{margin-top:24px; font-size:11.5px; color:var(--ink3); text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="acl-eco-bar">
+  <a href="https://aricciviclabs.org" class="acl-eco-org">AricCivicLabs.Org</a>
+  <span class="acl-eco-div"></span>
+  <div class="acl-eco-links">
+    <a href="https://receipts.aricciviclabs.org">receipts.</a>
+    <a href="https://transitions.aricciviclabs.org">Transitions</a>
+    <a href="https://inable.aricciviclabs.org">InAble</a>
+    <a href="https://meshforce.aricciviclabs.org">MeshForce</a>
+    <a href="https://civic.aricciviclabs.org/">Civic &amp; Rights</a>
+    <span class="acl-eco-here">Project: goo-goo (Pillar V concept)</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <header>
+    <div class="hero">
+      <div class="eyebrow">AricCivicLabs · Pillar V (proposed) · Physical &amp; Metabolic Enablement</div>
+      <h1>Project: <em>goo-goo</em><br><span style="font-size:0.42em; font-family:'DM Mono',monospace; letter-spacing:.04em; color:var(--ink2); text-transform:none;">ぐーぐー — "growl growl," the sound your stomach makes</span></h1>
+      <p class="subhead">Eat on <em>your</em> body's schedule, not the clock's. goo-goo plans meals around your real energy rhythm — starting as a simple planner today, building toward a system that reads your biometrics, books the food, and times the delivery so it never spoils and never comes too late.</p>
+      <div class="rule"></div>
+
+      <div class="badge-row">
+        <span class="badge badge-concept"><i class="ti ti-flask"></i> Concept — not yet live</span>
+        <span class="badge badge-ova"><i class="ti ti-movie"></i> OVA v0.3 — "The Renaming"</span>
+        <span class="badge badge-neutral"><i class="ti ti-shield-heart"></i> Wellness only — not medical advice</span>
+        <span class="badge badge-neutral"><i class="ti ti-lock"></i> Private by design</span>
+      </div>
+
+      <div class="mission-block">
+        <i class="ti ti-flag-2"></i>
+        <div><strong>This page is a working concept, not a live tool.</strong> Formerly floated under the working name "Even." — now tracked as <strong>Project: goo-goo</strong>, versioned like an anime series: builds ship as <strong>Seasons</strong> made of <strong>Episodes</strong>, and non-canon reframes (like this rename) ship as an <strong>OVA</strong>. It exists to pressure-test one idea — that the biggest lever on daily energy is *when* you eat, not just what — and to show how a full biometric-to-delivery loop could be built one honest episode at a time, instead of promising the finale on day one.</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="eyecatch"><span class="eyecatch-label">Season 1 · The Growl</span></div>
+
+  <div class="section-label">What ships first</div>
+  <p class="section-sub">No wearables, no accounts, no data leaving your browser — the same privacy bar as every other AricCivicLabs tool.</p>
+
+  <div class="spotlight">
+    <div class="spotlight-top">
+      <div class="spotlight-icon"><i class="ti ti-calendar-time"></i></div>
+      <div>
+        <div class="spotlight-tag">S1E1 · "The Growl" · <a href="/s1e1" style="color:inherit;text-decoration:underline;">Live now — try it →</a></div>
+        <div class="spotlight-title">The Energy Rhythm Planner</div>
+      </div>
+    </div>
+    <p class="spotlight-desc">Answer a few questions about your typical energy dips, meal times, and household schedule. Get back a weekly eating schedule and a matching shopping list — built from simple rules, not sensors. No device connection required.</p>
+    <div class="spotlight-list">
+      <div><i class="ti ti-check"></i> Weekly eat-by-this-time schedule, downloadable</div>
+      <div><i class="ti ti-check"></i> Cook-or-order flag per meal, set by you</div>
+      <div><i class="ti ti-check"></i> Shopping list sized to avoid leftovers spoiling</div>
+      <div><i class="ti ti-check"></i> Nothing typed here is saved or sent anywhere</div>
+    </div>
+    <a class="spotlight-cta" href="/s1e1" style="color:var(--p5);"><i class="ti ti-arrow-right"></i> Try the real tool — S1E1 is live</a>
+  </div>
+
+  <div class="section-label">How reminders work — S1E2, "The Call"</div>
+  <p class="section-sub">Pick one real-time channel to avoid a wall of duplicate alerts for the same meal. Each has a real drawback — shown here, not hidden.</p>
+
+  <div class="reality-grid" style="margin-bottom:16px;">
+    <div class="reality-card">
+      <i class="ti ti-calendar-event"></i>
+      <div class="reality-card-title">Calendar push <span class="tag" style="margin-left:6px;">Real-time</span></div>
+      <div class="reality-card-body">Your schedule is written as calendar events with alerts — Google/Apple Calendar's own notifications fire it. No infrastructure of ours.<br><strong>Drawback:</strong> only as reliable as your own calendar notification settings.</div>
+    </div>
+    <div class="reality-card">
+      <i class="ti ti-message-2"></i>
+      <div class="reality-card-title">SMS / Email <span class="tag" style="margin-left:6px;">Real-time or digest</span></div>
+      <div class="reality-card-body">A message fires at the set time. Works on any device, no install.<br><strong>Drawback:</strong> a message, not a system notification — easy to miss; real per-message cost at scale.</div>
+    </div>
+    <div class="reality-card">
+      <i class="ti ti-bell-ringing"></i>
+      <div class="reality-card-title">Web push <span class="tag" style="margin-left:6px;">Real-time</span></div>
+      <div class="reality-card-body">A real OS-level push notification from the site. Works from an open tab on Android Chrome.<br><strong>Drawback:</strong> on iOS, only works after "Add to Home Screen" — and doesn't fire at all for EU users.</div>
+    </div>
+  </div>
+
+  <div class="spotlight" style="background:var(--paper2);">
+    <div class="spotlight-top">
+      <div class="spotlight-icon"><i class="ti ti-list-numbers"></i></div>
+      <div>
+        <div class="spotlight-tag">The hierarchy — no tornado of alerts</div>
+        <div class="spotlight-title">One real-time channel. Digest and escalation are optional add-ons, not duplicates.</div>
+      </div>
+    </div>
+    <div class="spotlight-list" style="grid-template-columns:1fr;">
+      <div><i class="ti ti-check"></i> Exactly one real-time channel is active per meal window (Calendar push, SMS, or Web push) — picking a second doesn't stack it, it replaces the active one.</div>
+      <div><i class="ti ti-check"></i> Email can run alongside any real-time channel as a once-a-day morning digest of the full schedule, not a per-meal ping — so it never duplicates the real-time alert.</div>
+      <div><i class="ti ti-check"></i> Escalation is opt-in and single-fire: an unacknowledged alert triggers one fallback via a second channel, never a repeating retry.</div>
+      <div><i class="ti ti-check"></i> Opening any alert marks that window as seen, so the digest or escalation won't re-announce it.</div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:36px;">Season 1 — full episode list</div>
+  <p class="section-sub">"The Growl" arc. No app required for any episode in this season.</p>
+
+  <div class="roadmap" style="margin-bottom:8px;">
+
+    <div class="phase now">
+      <div class="phase-num">S1E1</div>
+      <div>
+        <div class="phase-title">The Growl<span class="tag">Web tool</span></div>
+        <div class="phase-desc">Rule-based weekly schedule + shopping list from manual input. No app, no device, no login.</div>
+      </div>
+    </div>
+
+    <div class="phase now">
+      <div class="phase-num">S1E2</div>
+      <div>
+        <div class="phase-title">The Call<span class="tag">Web tool</span></div>
+        <div class="phase-desc">Calendar push, SMS/email, or web push — user's choice, with the hierarchy above to prevent duplicate alerts.</div>
+      </div>
+    </div>
+
+    <div class="phase now">
+      <div class="phase-num">S1E3</div>
+      <div>
+        <div class="phase-title">The Delivery<span class="tag">Web tool</span></div>
+        <div class="phase-desc">Instacart's Developer Platform API pre-builds a cart or shopping list; Spoonacular surfaces recipes; Google Places/Yelp surface nearby delivery or pickup options. Reminders link to a one-tap checkout — you still confirm and pay.</div>
+      </div>
+    </div>
+
+    <div class="phase now">
+      <div class="phase-num">S1E4</div>
+      <div>
+        <div class="phase-title">Sync<span class="tag">Web tool</span></div>
+        <div class="phase-desc">The schedule lives on the household's real Google or Apple calendar — and doubles as the calendar-push reminder channel above.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="eyecatch"><span class="eyecatch-label">Season 2 · Awakening (not commissioned)</span></div>
+
+  <div class="section-label">Season 2 — full episode list</div>
+  <p class="section-sub">"Awakening" arc — optional, later, needs an app. This season is a teaser, not a promise.</p>
+
+  <div class="roadmap">
+
+    <div class="phase">
+      <div class="phase-num">S2E1</div>
+      <div>
+        <div class="phase-title">Awakening<span class="tag">Needs an app</span></div>
+        <div class="phase-desc">A companion phone app reads glucose (via an over-the-counter sensor synced through Apple Health / Google Health Connect) plus activity and sleep, and flags dips against the Season 1 schedule.</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">S2E2</div>
+      <div>
+        <div class="phase-title">The Prophecy</div>
+        <div class="phase-desc">A model trained on your own glucose, meal, and activity history forecasts the dip before it happens, instead of just flagging it as it occurs.</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">S2E3</div>
+      <div>
+        <div class="phase-title">Final Form</div>
+        <div class="phase-desc">Continuous read from phone, watch, or glasses. Predictive scheduling. Timed auto-ordering across groceries and prepared meals — the version this concept started as.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-label">Reality check (why it's paced this way)</div>
+
+  <div class="reality-grid">
+    <div class="reality-card">
+      <i class="ti ti-plug-connected"></i>
+      <div class="reality-card-title">There's no cloud API for glucose data</div>
+      <div class="reality-card-body">Apple Health and Google Health Connect only live on-device. "Awakening" (S2E1) needs an actual phone app to read them — this can't stay a web page for that part.</div>
+    </div>
+    <div class="reality-card">
+      <i class="ti ti-stethoscope"></i>
+      <div class="reality-card-title">CGM access is gatekept — mostly</div>
+      <div class="reality-card-body">Prescription CGMs require a business partnership. Over-the-counter sensors (like Stelo) sync to Apple Health/Health Connect with no approval needed — the realistic entry point, if Season 2 is ever greenlit.</div>
+    </div>
+    <div class="reality-card">
+      <i class="ti ti-shield-lock"></i>
+      <div class="reality-card-title">"Boost glucose" is medical-sounding</div>
+      <div class="reality-card-body">Framed as diabetes management, this needs clinical validation. Framed as energy and focus, it stays wellness — same lane as the rest of the site.</div>
+    </div>
+    <div class="reality-card">
+      <i class="ti ti-truck-delivery"></i>
+      <div class="reality-card-title">Delivery is more real than it sounds</div>
+      <div class="reality-card-body">Instacart's Developer Platform API already supports self-serve cart and shopping-list creation built for third-party integration — S1E3 is buildable, not a future promise.</div>
+    </div>
+  </div>
+
+  <div class="privacy-banner">
+    <i class="ti ti-alert-triangle"></i>
+    <div>This page describes a concept only. No data is collected, no wearables are connected, and nothing here is medical advice or a diabetes management tool. Any future version dealing with real glucose data would need its own privacy review beyond the rest of this site.</div>
+  </div>
+
+  <div class="acl-suite-footer">
+    <div class="acl-suite-grid">
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Work-Life Enablement</div>
+        <a href="https://receipts.aricciviclabs.org">receipts.</a>
+        <a href="https://transitions.aricciviclabs.org">Transitions</a>
+      </div>
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Social Enablement</div>
+        <a href="https://inable.aricciviclabs.org">InAble</a>
+      </div>
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Workforce Management</div>
+        <a href="https://meshforce.aricciviclabs.org">MeshForce</a>
+        <a href="https://theseam.aricciviclabs.org/seam.html">The Seam</a>
+      </div>
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Civic &amp; Rights · Free</div>
+        <a href="https://civic.aricciviclabs.org/">Civic &amp; Rights Index</a>
+      </div>
+      <div class="acl-suite-col">
+        <div class="acl-suite-label">Physical &amp; Metabolic · Proposed</div>
+        <span class="acl-suite-here">Project: goo-goo (this concept)</span>
+      </div>
+    </div>
+    <div class="acl-suite-meta">
+      <a href="https://aricciviclabs.org">AricCivicLabs.Org</a>
+      <span class="acl-m-dot">·</span>
+      <span>Concept mockup — not a live product</span>
+      <span class="acl-m-dot">·</span>
+      <span>© 2026 AricCivicLabs.Org</span>
+    </div>
+  </div>
+
+  <footer>
+    Concept drafted July 2026, OVA revision "The Renaming" same month. API and integration notes current as of that date — confirm before building, platforms change terms often.
+  </footer>
+
+</div>
+
+</body>
+</html>

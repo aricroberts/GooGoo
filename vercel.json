@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/even_concept.html" },
+    { "source": "/s1e1", "destination": "/goo_goo_s1e1_energy_rhythm_planner.html" }
+  ]
+}
