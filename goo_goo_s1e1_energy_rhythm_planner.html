@@ -518,11 +518,16 @@ function buildShoppingList(week, householdSize, dietStyle, avoidChips, avoidOthe
 }
 
 // ---------- UI wiring ----------
-document.querySelectorAll('.chip[data-dip]').forEach(function(chip){
-  chip.addEventListener('click', function(){ chip.classList.toggle('checked'); });
-});
-document.querySelectorAll('.chip[data-avoid]').forEach(function(chip){
-  chip.addEventListener('click', function(){ chip.classList.toggle('checked'); });
+// Chips that wrap a real (hidden) checkbox: sync visual state from the input's
+// own 'change' event rather than toggling on 'click'. A click on the label text
+// makes the browser dispatch a synthetic click on the checkbox too, which bubbles
+// back through the label — toggling on 'click' fires twice per tap and cancels out.
+document.querySelectorAll('.chip[data-dip] input, .chip[data-avoid] input').forEach(function(input){
+  var chip = input.closest('.chip');
+  chip.classList.toggle('checked', input.checked);
+  input.addEventListener('change', function(){
+    chip.classList.toggle('checked', input.checked);
+  });
 });
 document.querySelectorAll('.daychip').forEach(function(chip){
   chip.addEventListener('click', function(){ chip.classList.toggle('checked'); });
