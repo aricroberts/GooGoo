@@ -100,6 +100,14 @@
   .meal-cell:last-child{margin-bottom:0;}
   .meal-time{font-weight:600;}
   .meal-note{font-size:11px; color:var(--ink3); font-style:italic;}
+  .recipe-name{font-size:11.5px; color:var(--ink2); display:flex; align-items:center; gap:5px;}
+  .recipe-name.recipe-none{color:var(--ink3); font-style:italic;}
+  .recipe-shuffle{cursor:pointer; color:var(--p5); font-size:13px;}
+  .recipe-shuffle:hover{color:var(--brick);}
+  .recipe-list{background:#fff; border:1px solid var(--border-d); border-radius:12px; padding:14px 18px; margin-top:14px; font-size:13px; color:var(--ink2);}
+  .recipe-list-title{font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; font-family:'DM Mono',monospace;}
+  .recipe-list ul{list-style:none; padding:0; margin:0;}
+  .recipe-list li{padding:3px 0;}
   .mode-toggle{
     display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
     padding:2px 9px; border-radius:99px; border:1px solid; cursor:pointer; width:fit-content;
@@ -279,7 +287,7 @@
           <label class="chip" data-avoid="soy"><input type="checkbox" value="soy"> Soy</label>
         </div>
         <input type="text" id="avoidOther" placeholder="Anything else? e.g. cilantro, sesame — comma separated" style="margin-top:10px;">
-        <div class="fhint">This isn't recipe-level filtering yet (that needs real ingredient data — Episode 3, "The Delivery"). For now it adjusts the shopping-list categories and adds a clear reminder note on what to avoid.</div>
+        <div class="fhint">Matches you against a curated starter recipe set (not a live database) and filters out anything with these allergen tags. Free-text items you type above aren't recipe-filtered — those still just get called out in a reminder note.</div>
       </div>
 
       <div class="field">
@@ -304,11 +312,13 @@
 
     <div class="note-block"><i class="ti ti-info-circle"></i> Times are a starting-point estimate from simple rules (wake/sleep time, meal spacing, and shifting fuel ahead of your stated dips) — not a prediction from your actual biometrics. That's the difference between this build (Season 1) and the optional Season 2 ("Awakening"), which would read a real glucose trend instead of asking you to guess it.</div>
 
+    <div class="recipe-list" id="recipeList" style="display:none;"></div>
+
     <div class="section-label">Starter shopping list</div>
     <p class="section-sub" id="shopSub"></p>
     <div class="avoid-banner" id="avoidNoteBanner"><i class="ti ti-alert-circle"></i> <span></span></div>
     <div class="shop-grid" id="shopGrid"></div>
-    <div class="note-block"><i class="ti ti-info-circle"></i> This is a generic, scaled starter list — not matched to specific recipes yet. Real recipe-to-ingredient matching (via Spoonacular) and one-tap cart building (via Instacart) is Episode 3, "The Delivery," not built yet.</div>
+    <div class="note-block"><i class="ti ti-info-circle"></i> Ingredients are aggregated from a curated starter recipe set (24 recipes, tagged by diet and allergen) matched to each home-cooked slot — not a live recipe database. Click the refresh icon next to a recipe to try another match. One-tap cart building into Instacart or another grocery app is still Episode 3, "The Delivery," not built yet.</div>
 
     <div class="download-row">
       <button class="btn-secondary" onclick="downloadSchedule()"><i class="ti ti-file-text"></i> Download schedule (.txt)</button>
@@ -465,33 +475,177 @@ function buildWeek(input){
   });
 }
 
-function proteinWordingFor(dietStyle, avoidSet){
-  if (dietStyle === 'vegan') return 'plant protein (tofu, tempeh, legumes, seitan)';
-  if (dietStyle === 'vegetarian') return 'vegetarian protein (eggs, dairy, legumes, tofu)' + (avoidSet.eggs ? ' — skip eggs' : '');
-  if (dietStyle === 'pescatarian') return 'fish/seafood, legumes, tofu' + (avoidSet.eggs ? '' : ', eggs');
-  var base = 'protein portions (meat/fish/tofu/eggs)';
-  if (avoidSet.eggs) base = 'protein portions (meat/fish/tofu — no eggs)';
-  return base;
+// ---------- recipe database (S1E3-lite: embedded starter set, no live API) ----------
+// Each recipe lists real per-person ingredient quantities so the shopping list can be
+// aggregated to specific items instead of generic category estimates. `allergens` is the
+// real avoid-tag vocabulary (matches the chip set); `cat` on each ingredient is just a
+// shopping-list display bucket and is independent of the allergen list.
+var RECIPES = [
+  { id:'b1', name:'Veggie Scramble & Toast', slot:'breakfast', meat:false, fish:false, allergens:['eggs','dairy','gluten'],
+    ingredients:[ {name:'eggs',qty:2,unit:'each',cat:'protein'}, {name:'bell pepper',qty:0.5,unit:'each',cat:'produce'}, {name:'spinach',qty:1,unit:'cup',cat:'produce'}, {name:'shredded cheese',qty:0.25,unit:'cup',cat:'dairy'}, {name:'bread',qty:2,unit:'slices',cat:'grains'}, {name:'butter',qty:1,unit:'tbsp',cat:'dairy'} ] },
+  { id:'b2', name:'Overnight Oats with Berries', slot:'breakfast', meat:false, fish:false, allergens:[],
+    ingredients:[ {name:'rolled oats (GF)',qty:0.5,unit:'cup',cat:'grains'}, {name:'oat milk',qty:1,unit:'cup',cat:'dairy'}, {name:'chia seeds',qty:1,unit:'tbsp',cat:'grains'}, {name:'mixed berries',qty:0.5,unit:'cup',cat:'produce'}, {name:'maple syrup',qty:1,unit:'tbsp',cat:'grains'} ] },
+  { id:'b3', name:'Greek Yogurt Parfait', slot:'breakfast', meat:false, fish:false, allergens:['dairy','gluten','treenuts'],
+    ingredients:[ {name:'greek yogurt',qty:1,unit:'cup',cat:'dairy'}, {name:'granola',qty:0.33,unit:'cup',cat:'grains'}, {name:'mixed berries',qty:0.5,unit:'cup',cat:'produce'}, {name:'honey',qty:1,unit:'tbsp',cat:'grains'} ] },
+  { id:'b4', name:'Avocado Toast with Fried Egg', slot:'breakfast', meat:false, fish:false, allergens:['eggs','gluten'],
+    ingredients:[ {name:'bread',qty:2,unit:'slices',cat:'grains'}, {name:'avocado',qty:1,unit:'each',cat:'produce'}, {name:'egg',qty:1,unit:'each',cat:'protein'}, {name:'lemon',qty:0.25,unit:'each',cat:'produce'} ] },
+  { id:'b5', name:'Tofu Scramble Breakfast Burrito', slot:'breakfast', meat:false, fish:false, allergens:['soy','gluten'],
+    ingredients:[ {name:'firm tofu',qty:4,unit:'oz',cat:'protein'}, {name:'bell pepper',qty:0.5,unit:'each',cat:'produce'}, {name:'onion',qty:0.25,unit:'each',cat:'produce'}, {name:'flour tortilla',qty:1,unit:'each',cat:'grains'}, {name:'black beans',qty:0.25,unit:'cup',cat:'protein'}, {name:'salsa',qty:2,unit:'tbsp',cat:'produce'} ] },
+  { id:'b6', name:'Peanut Butter Banana Smoothie', slot:'breakfast', meat:false, fish:false, allergens:['peanuts'],
+    ingredients:[ {name:'banana',qty:1,unit:'each',cat:'produce'}, {name:'peanut butter',qty:2,unit:'tbsp',cat:'protein'}, {name:'oat milk',qty:1,unit:'cup',cat:'dairy'}, {name:'rolled oats',qty:0.25,unit:'cup',cat:'grains'} ] },
+  { id:'b7', name:'Smoked Salmon Bagel', slot:'breakfast', meat:false, fish:true, allergens:['gluten','dairy'],
+    ingredients:[ {name:'bagel',qty:1,unit:'each',cat:'grains'}, {name:'smoked salmon',qty:2,unit:'oz',cat:'protein'}, {name:'cream cheese',qty:2,unit:'tbsp',cat:'dairy'}, {name:'red onion',qty:0.125,unit:'each',cat:'produce'} ] },
+  { id:'b8', name:'Veggie Breakfast Burrito with Black Beans', slot:'breakfast', meat:false, fish:false, allergens:['gluten'],
+    ingredients:[ {name:'flour tortilla',qty:1,unit:'each',cat:'grains'}, {name:'black beans',qty:0.5,unit:'cup',cat:'protein'}, {name:'bell pepper',qty:0.5,unit:'each',cat:'produce'}, {name:'onion',qty:0.25,unit:'each',cat:'produce'}, {name:'avocado',qty:0.5,unit:'each',cat:'produce'}, {name:'salsa',qty:2,unit:'tbsp',cat:'produce'} ] },
+
+  { id:'l1', name:'Chickpea Salad Sandwich', slot:'lunch', meat:false, fish:false, allergens:['gluten'],
+    ingredients:[ {name:'chickpeas',qty:1,unit:'cup',cat:'protein'}, {name:'vegan mayo',qty:2,unit:'tbsp',cat:'grains'}, {name:'celery',qty:0.25,unit:'cup',cat:'produce'}, {name:'bread',qty:2,unit:'slices',cat:'grains'} ] },
+  { id:'l2', name:'Grilled Chicken Caesar Salad', slot:'lunch', meat:true, fish:false, allergens:['dairy','gluten','eggs'],
+    ingredients:[ {name:'chicken breast',qty:4,unit:'oz',cat:'protein'}, {name:'romaine lettuce',qty:2,unit:'cups',cat:'produce'}, {name:'parmesan cheese',qty:2,unit:'tbsp',cat:'dairy'}, {name:'croutons',qty:0.25,unit:'cup',cat:'grains'}, {name:'caesar dressing',qty:2,unit:'tbsp',cat:'dairy'} ] },
+  { id:'l3', name:'Lentil Soup with Crusty Bread', slot:'lunch', meat:false, fish:false, allergens:['gluten'],
+    ingredients:[ {name:'lentils',qty:0.75,unit:'cup',cat:'protein'}, {name:'carrot',qty:0.5,unit:'each',cat:'produce'}, {name:'celery',qty:0.5,unit:'stalk',cat:'produce'}, {name:'onion',qty:0.25,unit:'each',cat:'produce'}, {name:'vegetable broth',qty:1.5,unit:'cups',cat:'grains'}, {name:'crusty bread',qty:1,unit:'slice',cat:'grains'} ] },
+  { id:'l4', name:'Turkey & Avocado Wrap', slot:'lunch', meat:true, fish:false, allergens:['gluten'],
+    ingredients:[ {name:'turkey breast',qty:3,unit:'oz',cat:'protein'}, {name:'avocado',qty:0.5,unit:'each',cat:'produce'}, {name:'spinach',qty:0.5,unit:'cup',cat:'produce'}, {name:'flour tortilla',qty:1,unit:'each',cat:'grains'} ] },
+  { id:'l5', name:'Tofu Poke Bowl', slot:'lunch', meat:false, fish:false, allergens:['soy'],
+    ingredients:[ {name:'firm tofu',qty:4,unit:'oz',cat:'protein'}, {name:'rice',qty:0.75,unit:'cup',cat:'grains'}, {name:'cucumber',qty:0.5,unit:'each',cat:'produce'}, {name:'edamame',qty:0.25,unit:'cup',cat:'protein'}, {name:'soy sauce',qty:1,unit:'tbsp',cat:'grains'}, {name:'avocado',qty:0.5,unit:'each',cat:'produce'} ] },
+  { id:'l6', name:'Tuna Salad over Greens', slot:'lunch', meat:false, fish:true, allergens:['eggs'],
+    ingredients:[ {name:'canned tuna',qty:5,unit:'oz',cat:'protein'}, {name:'mayo',qty:2,unit:'tbsp',cat:'grains'}, {name:'mixed greens',qty:2,unit:'cups',cat:'produce'}, {name:'celery',qty:0.25,unit:'cup',cat:'produce'}, {name:'red onion',qty:0.125,unit:'each',cat:'produce'} ] },
+  { id:'l7', name:'Black Bean Quesadilla', slot:'lunch', meat:false, fish:false, allergens:['dairy','gluten'],
+    ingredients:[ {name:'black beans',qty:0.5,unit:'cup',cat:'protein'}, {name:'shredded cheese',qty:0.5,unit:'cup',cat:'dairy'}, {name:'flour tortilla',qty:2,unit:'each',cat:'grains'}, {name:'salsa',qty:2,unit:'tbsp',cat:'produce'} ] },
+  { id:'l8', name:'Shrimp & Veggie Stir-fry over Rice', slot:'lunch', meat:false, fish:true, allergens:['shellfish','soy','gluten'],
+    ingredients:[ {name:'shrimp',qty:4,unit:'oz',cat:'protein'}, {name:'broccoli',qty:1,unit:'cup',cat:'produce'}, {name:'bell pepper',qty:0.5,unit:'each',cat:'produce'}, {name:'rice',qty:0.75,unit:'cup',cat:'grains'}, {name:'soy sauce',qty:1,unit:'tbsp',cat:'grains'} ] },
+
+  { id:'d1', name:'Baked Salmon with Roasted Vegetables & Quinoa', slot:'dinner', meat:false, fish:true, allergens:[],
+    ingredients:[ {name:'salmon fillet',qty:5,unit:'oz',cat:'protein'}, {name:'broccoli',qty:1,unit:'cup',cat:'produce'}, {name:'carrot',qty:0.5,unit:'each',cat:'produce'}, {name:'quinoa',qty:0.75,unit:'cup',cat:'grains'}, {name:'olive oil',qty:1,unit:'tbsp',cat:'grains'} ] },
+  { id:'d2', name:'Chicken Stir-fry with Broccoli & Rice', slot:'dinner', meat:true, fish:false, allergens:['soy','gluten'],
+    ingredients:[ {name:'chicken breast',qty:5,unit:'oz',cat:'protein'}, {name:'broccoli',qty:1,unit:'cup',cat:'produce'}, {name:'carrot',qty:0.5,unit:'each',cat:'produce'}, {name:'rice',qty:0.75,unit:'cup',cat:'grains'}, {name:'soy sauce',qty:1,unit:'tbsp',cat:'grains'} ] },
+  { id:'d3', name:'Vegetable Curry with Chickpeas & Rice', slot:'dinner', meat:false, fish:false, allergens:[],
+    ingredients:[ {name:'chickpeas',qty:1,unit:'cup',cat:'protein'}, {name:'coconut milk',qty:0.5,unit:'cup',cat:'dairy'}, {name:'mixed vegetables',qty:1.5,unit:'cups',cat:'produce'}, {name:'rice',qty:0.75,unit:'cup',cat:'grains'}, {name:'curry paste',qty:1,unit:'tbsp',cat:'grains'} ] },
+  { id:'d4', name:'Spaghetti with Marinara & Side Salad', slot:'dinner', meat:false, fish:false, allergens:['gluten','dairy'],
+    ingredients:[ {name:'spaghetti',qty:3,unit:'oz',cat:'grains'}, {name:'marinara sauce',qty:1,unit:'cup',cat:'produce'}, {name:'parmesan cheese',qty:2,unit:'tbsp',cat:'dairy'}, {name:'mixed greens',qty:2,unit:'cups',cat:'produce'}, {name:'olive oil',qty:1,unit:'tbsp',cat:'grains'} ] },
+  { id:'d5', name:'Grilled Steak with Sweet Potato & Green Beans', slot:'dinner', meat:true, fish:false, allergens:[],
+    ingredients:[ {name:'steak',qty:6,unit:'oz',cat:'protein'}, {name:'sweet potato',qty:1,unit:'each',cat:'produce'}, {name:'green beans',qty:1,unit:'cup',cat:'produce'}, {name:'olive oil',qty:1,unit:'tbsp',cat:'grains'} ] },
+  { id:'d6', name:'Black Bean & Sweet Potato Tacos', slot:'dinner', meat:false, fish:false, allergens:[],
+    ingredients:[ {name:'black beans',qty:0.75,unit:'cup',cat:'protein'}, {name:'sweet potato',qty:1,unit:'each',cat:'produce'}, {name:'corn tortillas',qty:3,unit:'each',cat:'grains'}, {name:'avocado',qty:0.5,unit:'each',cat:'produce'}, {name:'lime',qty:0.25,unit:'each',cat:'produce'} ] },
+  { id:'d7', name:'Baked Tofu with Peanut Sauce & Rice Noodles', slot:'dinner', meat:false, fish:false, allergens:['peanuts','soy'],
+    ingredients:[ {name:'firm tofu',qty:5,unit:'oz',cat:'protein'}, {name:'rice noodles',qty:3,unit:'oz',cat:'grains'}, {name:'peanut sauce',qty:3,unit:'tbsp',cat:'grains'}, {name:'shredded carrot',qty:0.5,unit:'cup',cat:'produce'}, {name:'scallion',qty:1,unit:'each',cat:'produce'} ] },
+  { id:'d8', name:'Shrimp Scampi with Pasta', slot:'dinner', meat:false, fish:true, allergens:['shellfish','gluten','dairy'],
+    ingredients:[ {name:'shrimp',qty:5,unit:'oz',cat:'protein'}, {name:'linguine',qty:3,unit:'oz',cat:'grains'}, {name:'butter',qty:2,unit:'tbsp',cat:'dairy'}, {name:'garlic',qty:2,unit:'cloves',cat:'produce'}, {name:'lemon',qty:0.25,unit:'each',cat:'produce'} ] }
+];
+
+function slotForMealKey(key){
+  if (key === 'breakfast') return 'breakfast';
+  if (key === 'lunch' || key === 'meal1') return 'lunch';
+  if (key === 'dinner' || key === 'meal2') return 'dinner';
+  return null;
 }
 
-function computeCategories(cookMealCount, householdSize, dietStyle, avoidList){
-  var units = cookMealCount * householdSize;
-  var avoidSet = {};
-  avoidList.forEach(function(a){ avoidSet[a] = true; });
-  var categories = [
-    { name:'Produce', items:['~'+Math.ceil(units*0.6)+' servings mixed vegetables', '~'+Math.ceil(units*0.3)+' servings fruit'] },
-    { name:'Protein', items:['~'+Math.ceil(units*0.5)+' '+proteinWordingFor(dietStyle, avoidSet)] },
-    { name:'Grains & pantry', items:[
-        '~'+Math.ceil(units*0.4)+' servings '+(avoidSet.gluten ? 'gluten-free grains (rice, quinoa, GF oats)' : 'grains/starch'),
-        (avoidSet.peanuts || avoidSet.treenuts) ? 'Cooking oil, spices, staples on hand — check labels for nuts' : 'Cooking oil, spices, staples on hand'
-      ] }
-  ];
-  if (dietStyle !== 'vegan' && !avoidSet.dairy){
-    categories.push({ name:'Dairy', items:['~'+Math.ceil(units*0.2)+' servings dairy/alt-dairy'] });
-  } else {
-    categories.push({ name:'Dairy alternatives', items:['~'+Math.ceil(units*0.2)+' servings plant milk/yogurt (oat, soy, almond — check for nut avoidance)'] });
+function dietCompatible(recipe, dietStyle){
+  if (dietStyle === 'vegan'){
+    return !recipe.meat && !recipe.fish && recipe.allergens.indexOf('dairy') === -1 && recipe.allergens.indexOf('eggs') === -1 && recipe.allergens.indexOf('shellfish') === -1;
   }
-  return categories;
+  if (dietStyle === 'vegetarian') return !recipe.meat && !recipe.fish;
+  if (dietStyle === 'pescatarian') return !recipe.meat;
+  return true;
+}
+
+function allergenSafe(recipe, avoidChips){
+  if (!avoidChips || !avoidChips.length) return true;
+  return !recipe.allergens.some(function(a){ return avoidChips.indexOf(a) !== -1; });
+}
+
+function recipesForSlot(slot, dietStyle, avoidChips){
+  return RECIPES.filter(function(r){ return r.slot === slot && dietCompatible(r, dietStyle) && allergenSafe(r, avoidChips); });
+}
+
+function hashStr(s){
+  var h = 0;
+  for (var i=0; i<s.length; i++){ h = (h*31 + s.charCodeAt(i)) % 997; }
+  return h;
+}
+
+function pickRecipe(day, key, slot, dietStyle, avoidChips){
+  var matches = recipesForSlot(slot, dietStyle, avoidChips);
+  if (!matches.length) return null;
+  var ovKey = day + '|' + key;
+  var overrideId = recipeOverrides[ovKey];
+  if (overrideId){
+    var found = matches.filter(function(r){ return r.id === overrideId; })[0];
+    if (found) return found;
+  }
+  var idx = (DAYS.indexOf(day) + hashStr(key)) % matches.length;
+  return matches[idx];
+}
+
+function shuffleRecipe(day, key, slot){
+  var input = collectInput();
+  var matches = recipesForSlot(slot, input.dietStyle, input.avoidChips || []);
+  if (matches.length < 2) return;
+  var current = pickRecipe(day, key, slot, input.dietStyle, input.avoidChips || []);
+  var idx = current ? matches.findIndex(function(r){ return r.id === current.id; }) : -1;
+  var next = matches[(idx + 1) % matches.length];
+  recipeOverrides[day + '|' + key] = next.id;
+  renderSchedule();
+  renderShoppingList();
+}
+
+function formatQty(n){
+  var r = Math.round(n * 100) / 100;
+  if (Math.abs(r - Math.round(r)) < 0.001) return String(Math.round(r));
+  return String(r);
+}
+
+function formatLine(item){
+  if (item.unit === 'each') return formatQty(item.qty) + ' ' + item.name;
+  return formatQty(item.qty) + ' ' + item.unit + ' ' + item.name;
+}
+
+function aggregateIngredients(week, input){
+  var dietStyle = input.dietStyle, avoidChips = input.avoidChips || [], householdSize = input.householdSize;
+  var used = {};
+  var order = [];
+  var recipesUsed = [];
+  var unmatchedCount = 0;
+  var cookCount = 0;
+  week.forEach(function(d){
+    d.slots.forEach(function(s){
+      if (s.key.indexOf('snack') === 0) return;
+      var mode = effectiveMode(d.day, s.key, s.mode);
+      if (mode !== 'cook') return;
+      cookCount++;
+      var slot = slotForMealKey(s.key);
+      if (!slot) return;
+      var recipe = pickRecipe(d.day, s.key, slot, dietStyle, avoidChips);
+      if (!recipe){ unmatchedCount++; return; }
+      recipesUsed.push({ day: d.day, key: s.key, label: s.label, recipe: recipe });
+      recipe.ingredients.forEach(function(ing){
+        var k = ing.name + '|' + ing.unit + '|' + ing.cat;
+        if (!used[k]){ used[k] = { name: ing.name, unit: ing.unit, cat: ing.cat, qty: 0 }; order.push(k); }
+        used[k].qty += ing.qty * householdSize;
+      });
+    });
+  });
+  var byCat = { produce:[], protein:[], grains:[], dairy:[] };
+  order.forEach(function(k){ var it = used[k]; byCat[it.cat].push(formatLine(it)); });
+  var dairyLabel = (dietStyle === 'vegan') ? 'Dairy alternatives' : 'Dairy';
+  var categories = [];
+  if (byCat.produce.length) categories.push({ name:'Produce', items: byCat.produce });
+  if (byCat.protein.length) categories.push({ name:'Protein', items: byCat.protein });
+  if (byCat.grains.length) categories.push({ name:'Grains & pantry', items: byCat.grains });
+  if (byCat.dairy.length) categories.push({ name: dairyLabel, items: byCat.dairy });
+  if (!categories.length){
+    categories.push({ name:'Shopping list', items:[ cookCount === 0
+      ? 'No home-cooked meals this week — everything is set to order.'
+      : 'No recipe matches yet for your current diet/allergy settings — try loosening a filter, or plan this week yourself.' ] });
+  }
+  return {
+    cookMealCount: cookCount,
+    householdSize: householdSize,
+    avoidNote: buildAvoidNote(dietStyle, avoidChips, input.avoidOther || []),
+    categories: categories,
+    recipesUsed: recipesUsed,
+    unmatchedCount: unmatchedCount
+  };
 }
 
 function buildAvoidNote(dietStyle, avoidChips, avoidOther){
@@ -502,19 +656,7 @@ function buildAvoidNote(dietStyle, avoidChips, avoidOther){
   var parts = [];
   if (dietLabel) parts.push(dietLabel);
   if (all.length) parts.push('avoiding: ' + all.join(', '));
-  return 'Built for ' + parts.join(' · ') + '. This adjusts categories above, but isn\'t ingredient-level checking yet — read labels, especially for allergies.';
-}
-
-function buildShoppingList(week, householdSize, dietStyle, avoidChips, avoidOther){
-  var cookMealCount = 0;
-  week.forEach(function(d){ d.slots.forEach(function(s){ if (s.mode === 'cook' && s.key.indexOf('snack') !== 0) cookMealCount++; }); });
-  var avoidList = (avoidChips || []).concat(avoidOther || []);
-  return {
-    cookMealCount: cookMealCount,
-    householdSize: householdSize,
-    avoidNote: buildAvoidNote(dietStyle, avoidChips || [], avoidOther || []),
-    categories: computeCategories(cookMealCount, householdSize, dietStyle, avoidList)
-  };
+  return 'Built for ' + parts.join(' · ') + '. Recipes are filtered against the tagged allergens above; free-text items aren\'t recipe-checked yet — read labels regardless, especially for allergies.';
 }
 
 // ---------- UI wiring ----------
@@ -541,6 +683,7 @@ document.getElementById('mealStructure').addEventListener('change', function(){
 var currentWeek = null;
 var currentShop = null;
 var overrides = {}; // "day|key" -> mode
+var recipeOverrides = {}; // "day|key" -> recipe id (shuffle picks)
 
 var AVOID_LABELS = { peanuts:'peanuts', treenuts:'tree nuts', dairy:'dairy', gluten:'gluten', shellfish:'shellfish', eggs:'eggs', soy:'soy' };
 
@@ -574,9 +717,10 @@ function collectInput(){
 
 function generate(){
   overrides = {};
+  recipeOverrides = {};
   var input = collectInput();
   currentWeek = buildWeek(input);
-  currentShop = buildShoppingList(currentWeek, input.householdSize, input.dietStyle, input.avoidChips, input.avoidOther);
+  currentShop = aggregateIngredients(currentWeek, input);
   renderSchedule();
   renderShoppingList();
   document.getElementById('results').style.display = 'block';
@@ -597,6 +741,7 @@ function toggleOverride(day, key, storedMode){
 }
 
 function renderSchedule(){
+  var input = collectInput();
   var table = document.getElementById('schedTable');
   var html = '<thead><tr><th>Day</th>';
   currentWeek[0].slots.forEach(function(s){ html += '<th>'+s.label+'</th>'; });
@@ -605,9 +750,20 @@ function renderSchedule(){
     html += '<tr class="'+(d.isBusy ? 'busy-row' : '')+'"><td>'+d.day+(d.isBusy ? ' <span class="fhint">(busy)</span>' : '')+'</td>';
     d.slots.forEach(function(s){
       var mode = effectiveMode(d.day, s.key, s.mode);
+      var recipeHtml = '';
+      if (mode === 'cook'){
+        var slot = slotForMealKey(s.key);
+        if (slot){
+          var recipe = pickRecipe(d.day, s.key, slot, input.dietStyle, input.avoidChips || []);
+          recipeHtml = recipe
+            ? '<span class="recipe-name">'+recipe.name+' <i class="ti ti-refresh recipe-shuffle" title="Try another recipe" onclick="shuffleRecipe(\''+d.day+'\',\''+s.key+'\',\''+slot+'\')"></i></span>'
+            : '<span class="recipe-name recipe-none">No recipe match — plan your own</span>';
+        }
+      }
       html += '<td><div class="meal-cell">'
         + '<span class="meal-time">'+s.time+'</span>'
         + '<span class="mode-toggle '+mode+'" onclick="toggleOverride(\''+d.day+'\',\''+s.key+'\',\''+s.mode+'\')">'+mode+'</span>'
+        + recipeHtml
         + (s.note ? '<span class="meal-note">'+s.note+'</span>' : '')
         + '</div></td>';
     });
@@ -619,26 +775,23 @@ function renderSchedule(){
 
 function currentShopWithOverrides(){
   var input = collectInput();
-  var cookMealCount = 0;
-  currentWeek.forEach(function(d){
-    d.slots.forEach(function(s){
-      if (s.key.indexOf('snack') === 0) return;
-      var mode = effectiveMode(d.day, s.key, s.mode);
-      if (mode === 'cook') cookMealCount++;
-    });
-  });
-  var avoidList = (input.avoidChips || []).concat(input.avoidOther || []);
-  return {
-    cookMealCount: cookMealCount,
-    householdSize: input.householdSize,
-    avoidNote: buildAvoidNote(input.dietStyle, input.avoidChips || [], input.avoidOther || []),
-    categories: computeCategories(cookMealCount, input.householdSize, input.dietStyle, avoidList)
-  };
+  return aggregateIngredients(currentWeek, input);
 }
 
 function renderShoppingList(){
   currentShop = currentShopWithOverrides();
   document.getElementById('shopSub').textContent = 'Scaled for ' + currentShop.cookMealCount + ' home-cooked meals this week across ' + currentShop.householdSize + ' people.';
+  var recipeListEl = document.getElementById('recipeList');
+  if (currentShop.recipesUsed.length){
+    recipeListEl.style.display = 'block';
+    recipeListEl.innerHTML = '<div class="recipe-list-title">Recipes this week</div><ul>'
+      + currentShop.recipesUsed.map(function(r){ return '<li>'+r.day+' '+r.label+': '+r.recipe.name+'</li>'; }).join('')
+      + (currentShop.unmatchedCount ? '<li class="fhint">'+currentShop.unmatchedCount+' cook meal(s) had no recipe match for your current filters — plan those yourself.</li>' : '')
+      + '</ul>';
+  } else {
+    recipeListEl.style.display = 'none';
+    recipeListEl.innerHTML = '';
+  }
   var grid = document.getElementById('shopGrid');
   grid.innerHTML = currentShop.categories.map(function(cat){
     return '<div class="shop-card"><div class="shop-card-title">'+cat.name+'</div><ul>'
@@ -665,12 +818,21 @@ function triggerDownload(filename, text){
 }
 
 function downloadSchedule(){
+  var input = collectInput();
   var lines = ['Project: goo-goo — S1E1 "The Growl" — Weekly schedule', ''];
   currentWeek.forEach(function(d){
     lines.push(d.day + (d.isBusy ? ' (busy day)' : ''));
     d.slots.forEach(function(s){
       var mode = effectiveMode(d.day, s.key, s.mode);
-      lines.push('  ' + s.time + ' — ' + s.label + ' [' + mode.toUpperCase() + ']' + (s.note ? ' — ' + s.note : ''));
+      var recipeLine = '';
+      if (mode === 'cook'){
+        var slot = slotForMealKey(s.key);
+        if (slot){
+          var recipe = pickRecipe(d.day, s.key, slot, input.dietStyle, input.avoidChips || []);
+          recipeLine = recipe ? ' — recipe: ' + recipe.name : ' — no recipe match, plan your own';
+        }
+      }
+      lines.push('  ' + s.time + ' — ' + s.label + ' [' + mode.toUpperCase() + ']' + recipeLine + (s.note ? ' — ' + s.note : ''));
     });
     lines.push('');
   });
@@ -682,6 +844,16 @@ function shoppingListText(){
   var lines = ['Project: goo-goo — Starter shopping list', 'Scaled for ' + shop.cookMealCount + ' home-cooked meals, ' + shop.householdSize + ' people'];
   if (shop.avoidNote) lines.push(shop.avoidNote);
   lines.push('');
+  if (shop.recipesUsed.length){
+    lines.push('Recipes this week:');
+    shop.recipesUsed.forEach(function(r){ lines.push('  - ' + r.day + ' ' + r.label + ': ' + r.recipe.name); });
+    lines.push('');
+  }
+  if (shop.unmatchedCount){
+    lines.push(shop.unmatchedCount + ' cook meal(s) had no recipe match for your current diet/allergy settings — plan those yourself.');
+    lines.push('');
+  }
+  lines.push('Ingredients (scaled to your household):');
   shop.categories.forEach(function(cat){
     lines.push(cat.name + ':');
     cat.items.forEach(function(item){ lines.push('  - ' + item); });
@@ -742,6 +914,7 @@ function nextDateForWeekday(weekdayIndex){
 }
 
 function downloadIcs(){
+  var input = collectInput();
   var lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//AricCivicLabs//Project goo-goo S1E1//EN','CALSCALE:GREGORIAN'];
   var stamp = icsDate(new Date().getUTCFullYear(),(new Date().getUTCMonth()+1),new Date().getUTCDate(),new Date().getUTCHours(),new Date().getUTCMinutes());
   var uidCounter = 0;
@@ -754,13 +927,21 @@ function downloadIcs(){
       var mode = effectiveMode(d.day, s.key, s.mode);
       var h = Math.floor(((s.mins % 1440)+1440)%1440 / 60);
       var mi = ((s.mins % 1440)+1440)%1440 % 60;
+      var recipeSuffix = '';
+      if (mode === 'cook'){
+        var slot = slotForMealKey(s.key);
+        if (slot){
+          var recipe = pickRecipe(d.day, s.key, slot, input.dietStyle, input.avoidChips || []);
+          if (recipe) recipeSuffix = ' — ' + recipe.name;
+        }
+      }
       uidCounter++;
       lines.push('BEGIN:VEVENT');
       lines.push('UID:googoo-s1e1-' + d.day + '-' + s.key + '-' + uidCounter + '@aricciviclabs.org');
       lines.push('DTSTAMP:' + stamp + 'Z');
       lines.push('DTSTART:' + icsDate(dt.getFullYear(), dt.getMonth()+1, dt.getDate(), h, mi));
       lines.push('RRULE:FREQ=WEEKLY;BYDAY=' + BYDAY[d.day]);
-      lines.push('SUMMARY:' + s.label + ' — ' + mode.toUpperCase() + ' (goo-goo)');
+      lines.push('SUMMARY:' + s.label + ' — ' + mode.toUpperCase() + recipeSuffix + ' (goo-goo)');
       lines.push('DESCRIPTION:Project: goo-goo reminder' + (s.note ? ' — ' + s.note : ''));
       lines.push('END:VEVENT');
     });
