@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Every plan, remembered. — Account &amp; Generation Pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0B0F;
+    --surface:#14161C;
+    --surface-alt:#1B1E27;
+    --border:#262A33;
+    --lime:#D4FF3F;
+    --coral:#FF5B5B;
+    --sky:#5BC8FF;
+    --text:#F4F5F7;
+    --muted:#7B818F;
+    --muted-dim:#4B505C;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .display{font-family:'Big Shoulders Display',sans-serif; text-transform:uppercase; letter-spacing:0.01em;}
+  a{color:inherit;}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 24px;}
+
+  /* NAV */
+  nav{position:sticky; top:0; z-index:50; background:rgba(10,11,15,0.85); backdrop-filter:blur(10px); border-bottom:1px solid var(--border);}
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:64px;}
+  .logo{display:flex; align-items:center; gap:8px; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:22px; letter-spacing:0.03em;}
+  .logo .dot{width:9px; height:9px; border-radius:50%; background:var(--lime);}
+  .navlinks{display:flex; align-items:center; gap:28px; font-size:14px; color:var(--muted);}
+  .navlinks a:hover{color:var(--text);}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:10px 18px; border-radius:8px; font-weight:700; font-size:14px;
+    cursor:pointer; border:1px solid transparent; white-space:nowrap;
+    transition:transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn-primary{background:var(--lime); color:#0A0B0F;}
+  .btn-primary:hover{transform:translateY(-1px);}
+  .btn-ghost{border-color:var(--border); color:var(--text);}
+  .btn-ghost:hover{border-color:var(--muted);}
+
+  /* HERO */
+  header.hero{padding:76px 0 64px; border-bottom:1px solid var(--border); position:relative; overflow:hidden;}
+  .hero-grid{display:grid; grid-template-columns:1.05fr 0.95fr; gap:56px; align-items:center;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.08em;
+    color:var(--lime); background:rgba(212,255,63,0.08); border:1px solid rgba(212,255,63,0.25);
+    padding:6px 12px; border-radius:999px; margin-bottom:22px;
+  }
+  h1{
+    font-family:'Big Shoulders Display',sans-serif; font-weight:900;
+    font-size:clamp(40px,5.2vw,64px); line-height:0.96; letter-spacing:0.005em;
+    text-transform:uppercase; margin-bottom:22px;
+  }
+  h1 .accent{color:var(--lime);}
+  .hero p.sub{font-size:17px; color:var(--muted); max-width:480px; margin-bottom:30px;}
+  .hero-cta{display:flex; gap:12px; align-items:center; margin-bottom:34px;}
+  .hero-cta .btn{padding:13px 22px; font-size:15px;}
+  .hero-note{font-size:13px; color:var(--muted-dim);}
+
+  /* GENERATOR WIDGET (signature element) */
+  .gen-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:22px; position:relative;
+  }
+  .gen-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+  .gen-title{font-size:11px; letter-spacing:0.1em; color:var(--muted); font-family:'IBM Plex Mono',monospace; text-transform:uppercase;}
+  .gen-live{display:flex; align-items:center; gap:6px; font-size:11px; color:var(--lime); font-family:'IBM Plex Mono',monospace;}
+  .gen-live .pulse{width:6px; height:6px; border-radius:50%; background:var(--lime); animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.25;}}
+
+  .gen-row{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;}
+  .chip{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; padding:7px 12px; border-radius:8px;
+    border:1px solid var(--border); color:var(--muted); cursor:pointer; background:var(--surface-alt);
+    transition:all .15s ease;
+  }
+  .chip.active{border-color:var(--lime); color:var(--lime); background:rgba(212,255,63,0.08);}
+  .gen-label{font-size:11px; color:var(--muted-dim); margin:14px 0 8px; font-family:'IBM Plex Mono',monospace; letter-spacing:0.06em;}
+
+  .cal{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:12px;}
+  .cal-dot{
+    aspect-ratio:1; border-radius:6px; background:var(--surface-alt); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted-dim);
+    transition:all .2s ease; cursor:default;
+  }
+  .gen-preview{
+    background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:12px 14px;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); min-height:40px;
+  }
+  .gen-preview b{color:var(--text);}
+
+  /* SECTIONS */
+  section{padding:72px 0; border-bottom:1px solid var(--border);}
+  .section-head{max-width:560px; margin-bottom:44px;}
+  .section-eyebrow{font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.1em; color:var(--muted-dim); text-transform:uppercase; margin-bottom:10px;}
+  .section-title{font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:clamp(28px,3.4vw,40px); text-transform:uppercase; line-height:1.02;}
+  .section-body{color:var(--muted); font-size:15px; margin-top:14px;}
+
+  /* PROBLEM */
+  .problem-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:14px; overflow:hidden;}
+  .problem-card{background:var(--bg); padding:26px 24px;}
+  .problem-num{font-family:'IBM Plex Mono',monospace; color:var(--coral); font-size:12px; margin-bottom:14px;}
+  .problem-card h4{font-size:17px; font-weight:700; margin-bottom:8px;}
+  .problem-card p{color:var(--muted); font-size:14px;}
+
+  /* PILLARS */
+  .pillars{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  .pillar{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:26px;}
+  .pillar-icon{width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; margin-bottom:18px;}
+  .pillar h4{font-size:18px; font-weight:700; margin-bottom:8px;}
+  .pillar p{color:var(--muted); font-size:14px;}
+  .pillar ul{margin-top:14px; padding-left:0; list-style:none;}
+  .pillar li{font-size:13px; color:var(--muted); padding:6px 0; border-top:1px solid var(--border); display:flex; gap:8px;}
+  .pillar li:before{content:"→"; color:var(--lime); flex-shrink:0;}
+
+  /* DASHBOARD MOCKUP */
+  .device{
+    background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:20px;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,0.6);
+  }
+  .device-bar{display:flex; gap:6px; margin-bottom:16px;}
+  .device-bar span{width:9px; height:9px; border-radius:50%; background:var(--border);}
+  .device-inner{background:var(--bg); border-radius:12px; padding:20px; border:1px solid var(--border);}
+  .dash-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;}
+  .dash-name{font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace;}
+  .dash-streak{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--lime); display:flex; align-items:center; gap:6px;}
+  .bar-track{height:8px; background:var(--surface-alt); border-radius:999px; overflow:hidden; margin-bottom:8px;}
+  .bar-fill{height:100%; width:63%; background:linear-gradient(90deg,var(--sky),var(--lime));}
+  .dash-grid{display:grid; grid-template-columns:repeat(10,1fr); gap:5px; margin-top:18px;}
+  .dg{aspect-ratio:1; border-radius:4px;}
+  .stat-row{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:20px;}
+  .stat{background:var(--surface-alt); border-radius:10px; padding:12px; border:1px solid var(--border);}
+  .stat .v{font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; color:var(--text);}
+  .stat .l{font-size:11px; color:var(--muted-dim); margin-top:2px;}
+
+  .split{display:grid; grid-template-columns:0.9fr 1.1fr; gap:56px; align-items:center;}
+  .split-copy p{color:var(--muted); font-size:15px; margin-bottom:16px;}
+  .split-list{margin-top:22px;}
+  .split-list li{list-style:none; display:flex; gap:12px; padding:12px 0; border-top:1px solid var(--border); font-size:14px; color:var(--text);}
+  .split-list li span.n{font-family:'IBM Plex Mono',monospace; color:var(--muted-dim); flex-shrink:0;}
+
+  /* STAT BAR */
+  .statbar{background:var(--surface); padding:40px 0; border-bottom:1px solid var(--border);}
+  .statbar .wrap{display:grid; grid-template-columns:repeat(4,1fr); gap:24px;}
+  .statbar .item{text-align:left;}
+  .statbar .v{font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:38px; color:var(--lime);}
+  .statbar .l{font-size:12px; color:var(--muted); margin-top:4px;}
+  .statbar-note{font-size:11px; color:var(--muted-dim); margin-top:24px; font-family:'IBM Plex Mono',monospace;}
+
+  /* PRICING */
+  .pricing-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  .plan{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px;}
+  .plan.featured{border-color:var(--lime); background:linear-gradient(180deg,rgba(212,255,63,0.06),transparent 40%),var(--surface);}
+  .plan-tag{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em;}
+  .plan-price{font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:40px; margin:10px 0 4px;}
+  .plan-price span{font-size:14px; color:var(--muted); font-family:'Inter',sans-serif; font-weight:500;}
+  .plan-desc{font-size:13px; color:var(--muted); margin-bottom:20px;}
+  .plan ul{list-style:none;}
+  .plan li{font-size:13px; padding:9px 0; border-top:1px solid var(--border); display:flex; gap:10px; color:var(--text);}
+  .plan li:before{content:"✓"; color:var(--lime); flex-shrink:0;}
+  .plan .btn{width:100%; margin-top:22px;}
+
+  /* ADAPTIVE COMPARE */
+  .checkin-card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:24px;}
+  .checkin-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;}
+  .checkin-badge{font-size:10px; color:var(--muted); background:var(--surface-alt); border:1px solid var(--border); padding:5px 10px; border-radius:999px; letter-spacing:0.06em;}
+  .checkin-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px 28px; margin-bottom:20px;}
+  .checkin-field{display:flex; flex-direction:column; gap:8px;}
+  .checkin-label{font-size:12.5px; color:var(--muted); display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .checkin-label b{color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:13px;}
+  .checkin-hint{font-size:11px; color:var(--muted-dim);}
+  .slider{-webkit-appearance:none; width:100%; height:4px; border-radius:999px; background:var(--surface-alt); outline:none;}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--lime); cursor:pointer; border:3px solid var(--bg);}
+  .slider::-moz-range-thumb{width:16px; height:16px; border-radius:50%; background:var(--lime); cursor:pointer; border:3px solid var(--bg);}
+  .numinput{background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:9px 12px; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:13px; width:100px;}
+  .checkin-verdict{
+    background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px; color:var(--muted);
+  }
+  .verdict-tag{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; letter-spacing:0.06em; padding:5px 10px; border-radius:6px; background:rgba(212,255,63,0.12); color:var(--lime); flex-shrink:0;}
+
+  .adaptive-compare{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .adaptive-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px;}
+  .adaptive-card.static{opacity:.6;}
+  .adaptive-card.live{border-color:var(--lime);}
+  .adaptive-tag{font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted);}
+  .adaptive-tag.live{color:var(--lime);}
+  .adaptive-day{margin-top:14px; padding:14px; border-radius:10px; background:var(--surface-alt); border:1px solid var(--border);}
+  .adaptive-day h5{font-size:14px; margin-bottom:5px;}
+  .adaptive-day p{font-size:12.5px; color:var(--muted); line-height:1.5;}
+  .adaptive-why{margin-top:16px; font-size:12px; color:var(--lime); font-family:'IBM Plex Mono',monospace; padding-top:14px; border-top:1px solid var(--border); line-height:1.6;}
+
+  /* CHART */
+  .chart-card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px;}
+  .chart-toggles{display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;}
+  .chart-toggle{font-family:'IBM Plex Mono',monospace; font-size:12px; padding:7px 12px; border-radius:8px; border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; gap:7px; color:var(--text); background:var(--surface-alt); transition:opacity .15s ease;}
+  .chart-toggle .sw{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .chart-toggle.off{opacity:.3;}
+  .chart-svg{width:100%; height:auto; display:block;}
+  .chart-legend-note{font-size:11px; color:var(--muted-dim); margin-top:12px; font-family:'IBM Plex Mono',monospace;}
+
+  /* INTEGRATIONS */
+  .integrations-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  .integration-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:26px; display:flex; gap:16px; align-items:flex-start;}
+  .integration-icon{width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; background:var(--surface-alt); border:1px solid var(--border);}
+  .integration-card h4{font-size:16px; margin-bottom:7px;}
+  .integration-card p{font-size:13px; color:var(--muted); line-height:1.55;}
+  .flow-strip{display:flex; align-items:center; justify-content:center; gap:12px; margin-top:32px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); flex-wrap:wrap;}
+  .flow-node{background:var(--surface-alt); border:1px solid var(--border); padding:8px 14px; border-radius:999px;}
+  .flow-arrow{color:var(--muted-dim);}
+  .sync-badge{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--sky); border:1px solid rgba(91,200,255,0.3); background:rgba(91,200,255,0.08); padding:3px 8px; border-radius:999px; margin-left:8px;}
+
+  /* CTA FOOTER */
+  .cta-final{padding:90px 0; text-align:center;}
+  .cta-final h2{font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:clamp(32px,5vw,54px); text-transform:uppercase; line-height:1; margin-bottom:18px;}
+  .cta-final p{color:var(--muted); max-width:460px; margin:0 auto 30px; font-size:15px;}
+
+  footer{padding:32px 0; }
+  footer .wrap{display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--muted-dim);}
+
+  @media (max-width:860px){
+    .hero-grid, .split, .pillars, .problem-grid, .pricing-grid, .statbar .wrap{grid-template-columns:1fr; gap:28px;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><span class="dot"></span>PLANFORGE</div>
+    <div class="navlinks">
+      <a href="#problem">Why accounts</a>
+      <a href="#adaptive">Adapts</a>
+      <a href="#integrations">Roadmap</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <a class="btn btn-ghost">Sign in</a>
+      <a class="btn btn-primary">Start free</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">● PITCH — TURNING ONE PLAN INTO A PLATFORM</div>
+      <h1>Your plan shouldn't <span class="accent">live in one file.</span></h1>
+      <p class="sub">The 100-day app works — for one person, on one phone, for one goal. Give it an account layer and a generator, and it becomes something anyone can build their own version of, and never lose.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary">Generate your plan — free</a>
+        <a class="btn btn-ghost">See the product tour</a>
+      </div>
+      <div class="hero-note mono">No credit card. Progress syncs the moment you make an account.</div>
+    </div>
+
+    <div class="gen-card">
+      <div class="gen-head">
+        <span class="gen-title">Plan generator — live preview</span>
+        <span class="gen-live"><span class="pulse"></span>generating</span>
+      </div>
+
+      <div class="gen-label">Goal</div>
+      <div class="gen-row" id="goalRow">
+        <div class="chip active" data-goal="fat">Fat loss</div>
+        <div class="chip" data-goal="strength">Strength</div>
+        <div class="chip" data-goal="mobility">Mobility</div>
+      </div>
+
+      <div class="gen-label">Days per week</div>
+      <div class="gen-row" id="freqRow">
+        <div class="chip" data-freq="3">3</div>
+        <div class="chip active" data-freq="5">5</div>
+        <div class="chip" data-freq="6">6</div>
+      </div>
+
+      <div class="gen-label">First 14 days</div>
+      <div class="cal" id="calGrid"></div>
+      <div class="gen-preview" id="genPreview">Hover a day to preview <b>what the generator wrote</b> for it.</div>
+    </div>
+  </div>
+</header>
+
+<section class="statbar" id="proof">
+  <div class="wrap">
+    <div class="item"><div class="v">100%</div><div class="l">of today's plan is hardcoded to one user — zero of it is reusable as-is</div></div>
+    <div class="item"><div class="v">0</div><div class="l">accounts. Progress lives in one browser's localStorage, on one device</div></div>
+    <div class="item"><div class="v">1→∞</div><div class="l">the jump this pitch is about: one static plan → unlimited generated ones</div></div>
+    <div class="item"><div class="v">Supabase</div><div class="l">already wired for storage — auth and multi-user tables are the next step, not a rebuild</div></div>
+  </div>
+  <div class="wrap"><div class="statbar-note">Figures above describe the current build, not projected users — this section states the starting point the pitch argues from.</div></div>
+</section>
+
+<section id="problem">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">The problem with the current build</div>
+      <div class="section-title">A great plan, stuck being one person's plan</div>
+      <p class="section-body">The 100-day tracker is genuinely good product work — phased structure, daily specificity, a clean completion loop. But three things cap how far it can travel as-is.</p>
+    </div>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="problem-num mono">01</div>
+        <h4>It's written for one body</h4>
+        <p>Every day's workout is hand-authored for a 49-year-old, 220 lb, chest-and-cardio goal. Anyone else opening the app gets someone else's plan.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-num mono">02</div>
+        <h4>Progress lives in a browser</h4>
+        <p>A random UUID in localStorage is the only identity. Clear your cache, switch phones, or reinstall — the streak and the history are gone.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-num mono">03</div>
+        <h4>No reason to come back tomorrow</h4>
+        <p>Nothing nudges a return visit, celebrates a streak, or shows the trend line. Completion is silent — the app never tells you you're winning.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="product">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">What an account layer buys you</div>
+      <div class="section-title">Three features, one login</div>
+      <p class="section-body">Each pillar below maps directly onto something the current codebase already half-has — this is extension, not a rewrite.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar-icon" style="background:rgba(212,255,63,0.12); color:var(--lime);">◆</div>
+        <h4>Generated, not authored</h4>
+        <p>A short intake (goal, equipment, days/week, injuries) replaces the hardcoded day map with a produced one — same day-card format, different content per person.</p>
+        <ul>
+          <li>Quiz → plan in under a minute</li>
+          <li>Regenerate a phase without losing history</li>
+          <li>Swap a single day if a machine's taken</li>
+        </ul>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon" style="background:rgba(91,200,255,0.12); color:var(--sky);">◆</div>
+        <h4>An account, not a UUID</h4>
+        <p>Email or social sign-in replaces the anonymous localStorage ID. The Supabase table already keyed by user_id needs almost no schema change to become multi-tenant.</p>
+        <ul>
+          <li>Sign in on any phone, same plan</li>
+          <li>One account, multiple plans over time</li>
+          <li>Export or delete your data on request</li>
+        </ul>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon" style="background:rgba(255,91,91,0.12); color:var(--coral);">◆</div>
+        <h4>Progress with memory</h4>
+        <p>Completed days already exist as data — accounts make them worth looking at: streaks, phase trends, and a record that outlives any single 100-day run.</p>
+        <ul>
+          <li>Streak counter and weekly consistency</li>
+          <li>Waist / weight check-ins charted over time</li>
+          <li>Plan two starts where plan one ended</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="adaptive">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Why a subscription has to earn its keep</div>
+      <div class="section-title">A static plan is a PDF. A paid one has to change its mind.</div>
+      <p class="section-body">Nobody keeps paying $7 a month for a calendar that doesn't notice them. For now, the adaptive engine runs on a 60-second manual check-in — no wearable required — and rewrites the week ahead from what you report. Not the whole 100 days, just what's next.</p>
+    </div>
+
+    <div class="checkin-card">
+      <div class="checkin-head">
+        <span class="gen-title">Weekly check-in — live preview</span>
+        <span class="checkin-badge mono">MANUAL INPUT · NO WEARABLE NEEDED</span>
+      </div>
+      <div class="checkin-grid">
+        <div class="checkin-field">
+          <div class="checkin-label">Sessions completed this week <b id="valSessions">5</b> / 7</div>
+          <input type="range" min="0" max="7" value="5" id="inSessions" class="slider">
+        </div>
+        <div class="checkin-field">
+          <div class="checkin-label">Perceived effort <b id="valEffort">3</b> / 5 <span class="checkin-hint">(1 easy — 5 maxed out)</span></div>
+          <input type="range" min="1" max="5" value="3" id="inEffort" class="slider">
+        </div>
+        <div class="checkin-field">
+          <div class="checkin-label">Resting heart rate vs last week <b id="valHr">+1</b> bpm</div>
+          <input type="range" min="-6" max="8" value="1" id="inHr" class="slider">
+        </div>
+        <div class="checkin-field">
+          <div class="checkin-label">Waist this week (in)</div>
+          <input type="number" step="0.1" value="40.1" id="inWaist" class="numinput">
+        </div>
+      </div>
+      <div class="checkin-verdict" id="checkinVerdict">
+        <span class="verdict-tag" id="verdictTag">HOLD STEADY</span>
+        <span id="verdictDetail">Numbers are in range — next week repeats this week's plan as written.</span>
+      </div>
+    </div>
+
+    <div class="adaptive-compare">
+      <div class="adaptive-card static">
+        <div class="adaptive-tag">Static plan — week 4</div>
+        <div class="adaptive-day">
+          <h5>Day 22 — Chest Heavy</h5>
+          <p>5×10 machine press, 4×10 incline fly, 4×10 crossover — same volume regardless of how weeks 1–3 actually went.</p>
+        </div>
+        <div class="adaptive-day">
+          <h5>Day 24 — HIIT, 12 rounds</h5>
+          <p>Scheduled at full intensity even if the last four sessions were skipped or cut short.</p>
+        </div>
+      </div>
+      <div class="adaptive-card live">
+        <div class="adaptive-tag live">Adaptive plan — week 4</div>
+        <div class="adaptive-day">
+          <h5>Day 22 — Chest, volume −20%</h5>
+          <p>4×10 machine press, 3×10 incline fly — self-reported completion fell to 3/7 and resting HR was logged up 4bpm, so volume steps down first.</p>
+        </div>
+        <div class="adaptive-day">
+          <h5>Day 24 — Swapped to Recovery</h5>
+          <p>HIIT moves to Day 27. An extra recovery day sits in its place until the next check-in turns back around.</p>
+        </div>
+        <div class="adaptive-why">WHY THIS CHANGED: check-in showed a 3-session miss + resting HR reported up 4bpm → the engine reads early overreach, not laziness, and backs off before it becomes a dropped week.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="metrics">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">What the engine is actually watching</div>
+      <div class="section-title">Three trend lines, tracked every week</div>
+      <p class="section-body">All three come from the same weekly check-in for now — no sensor, no sync, just four numbers typed in once a week. That's the whole data pipeline until wearables are layered in later.</p>
+    </div>
+    <div class="chart-card">
+      <div class="chart-toggles" id="chartToggles"></div>
+      <svg class="chart-svg" id="chartSvg" viewBox="0 0 640 220" preserveAspectRatio="none"></svg>
+      <div class="chart-legend-note">Illustrative 12-week trend, each line scaled to its own range · ring markers = weeks the engine changed the plan</div>
+    </div>
+  </div>
+</section>
+
+<section id="dashboard">
+  <div class="wrap split">
+    <div class="split-copy">
+      <div class="section-eyebrow">What it looks like once it's tracked</div>
+      <div class="section-title" style="margin-bottom:14px;">The same day-grid, now worth logging into</div>
+      <p>Nothing about the interaction model changes — tap a day, read the detail, mark it done. What's new is that the app remembers you specifically, and shows it back.</p>
+      <ul class="split-list">
+        <li><span class="n mono">01</span> Streak and completion rate greet you on return, not just a blank grid</li>
+        <li><span class="n mono">02</span> Phase-by-phase trend replaces a single flat progress bar</li>
+        <li><span class="n mono">03</span> Check-ins (waist, weight, photos) attach to the timeline, not a separate app</li>
+      </ul>
+    </div>
+    <div class="device">
+      <div class="device-bar"><span></span><span></span><span></span></div>
+      <div class="device-inner">
+        <div class="dash-top">
+          <div>
+            <div class="dash-name">SIGNED IN · j.torres@mail.com</div>
+            <div style="font-family:'Big Shoulders Display',sans-serif; font-weight:800; font-size:22px; text-transform:uppercase; margin-top:4px;">Phase 3 · Intensify</div>
+          </div>
+          <div class="dash-streak">🔥 12-day streak<span class="sync-badge">📝 Checked in Mon</span></div>
+        </div>
+        <div class="bar-track"><div class="bar-fill"></div></div>
+        <div style="font-size:11px; color:var(--muted-dim);" class="mono">63/100 days · Day 63 of 100</div>
+        <div class="dash-grid" id="dashGrid"></div>
+        <div class="stat-row">
+          <div class="stat"><div class="v">−4.5<span style="font-size:11px;">in</span></div><div class="l">WAIST SINCE DAY 1</div></div>
+          <div class="stat"><div class="v">91%</div><div class="l">WEEKLY COMPLETION</div></div>
+          <div class="stat"><div class="v">2nd</div><div class="l">PLAN ON THIS ACCOUNT</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="integrations">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Roadmap — not in the first build</div>
+      <div class="section-title">Manual inputs prove the model. Wearables scale it later.</div>
+      <p class="section-body">The adaptive engine doesn't care where its four numbers come from — a check-in form and a synced Watch feed it the same shape of data. Shipping on manual input first means no HealthKit review, no OAuth scopes, no Android/iOS parity work before the core loop is validated. Once the adaptation logic is proven on self-report, swapping in automatic sync is additive, not a rebuild.</p>
+    </div>
+    <div class="integrations-grid">
+      <div class="integration-card">
+        <div class="integration-icon">⌚</div>
+        <div>
+          <h4>Apple Health / Apple Watch — later</h4>
+          <p>Would read workout sessions, active calories, and resting heart rate through HealthKit, so a finished chest day auto-marks complete instead of waiting on a check-in. Not required to launch or to validate the adaptive logic.</p>
+        </div>
+      </div>
+      <div class="integration-card">
+        <div class="integration-icon">⌚</div>
+        <div>
+          <h4>Google Fit / Wear OS — later</h4>
+          <p>Same shape on Android via the Sessions and Recording APIs. Both plug into the same verdict logic the check-in widget above already runs — sync just replaces four typed numbers with four synced ones.</p>
+        </div>
+      </div>
+    </div>
+    <div class="flow-strip">
+      <div class="flow-node">Weekly check-in (now)</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Adaptive engine</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Next week's plan</div><div class="flow-arrow">···→</div>
+      <div class="flow-node" style="opacity:.5;">Watch / Wear OS sync (later)</div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Monetization shape</div>
+      <div class="section-title">Free plan sells the habit. Pro sells the adjustment.</div>
+      <p class="section-body">The generator and tracker are the free hook. The paid tier is the plan that actually pays attention — weekly adaptation, wearable sync, and a memory that spans every 100-day run, not just the current one.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="plan">
+        <div class="plan-tag">Free</div>
+        <div class="plan-price">$0<span>/forever</span></div>
+        <div class="plan-desc">One generated plan, tracked to completion.</div>
+        <ul>
+          <li>One 100-day generated plan</li>
+          <li>Account sync across devices</li>
+          <li>Streak &amp; completion tracking</li>
+          <li>Manual day swaps</li>
+        </ul>
+        <a class="btn btn-ghost">Start free</a>
+      </div>
+      <div class="plan featured">
+        <div class="plan-tag" style="color:var(--lime);">Pro</div>
+        <div class="plan-price">$7<span>/month</span></div>
+        <div class="plan-desc">The plan that adjusts itself, week to week.</div>
+        <ul>
+          <li>Adaptive engine — plan updates weekly from your check-in</li>
+          <li>Resting HR, waist &amp; weight trend charts</li>
+          <li>Unlimited generated plans, full history</li>
+          <li>Regenerate a phase mid-plan</li>
+        </ul>
+        <div class="checkin-hint" style="margin-top:12px; font-family:'IBM Plex Mono',monospace;">+ Apple Watch / Google Fit sync — roadmap, not in v1</div>
+        <a class="btn btn-primary">Start Pro trial</a>
+      </div>
+      <div class="plan">
+        <div class="plan-tag">Coach</div>
+        <div class="plan-price">$24<span>/month</span></div>
+        <div class="plan-desc">For a trainer building plans for clients.</div>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>Assign plans to client accounts</li>
+          <li>View client completion, not content</li>
+          <li>Branded plan links</li>
+        </ul>
+        <a class="btn btn-ghost">Talk to us</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-final" id="close">
+  <div class="wrap">
+    <div class="section-eyebrow" style="text-align:center;">Next build step</div>
+    <h2>Auth first. Adaptation second.<br>Wearables are a later phase.</h2>
+    <p>The tracking, the Supabase table, and the day-card UI already exist. Build order: accounts and generation, then a weekly check-in form and adaptive engine, then HealthKit / Google Fit sync once the logic is proven — each stage ships something sellable on its own.</p>
+    <a class="btn btn-primary" style="padding:14px 28px; font-size:15px;">Start the build</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Internal product pitch — not a live product</span>
+    <span class="mono">PLANFORGE / v0.1</span>
+  </div>
+</footer>
+
+<script>
+  const plans = {
+    fat:      ["Cardio","Chest","Swim","Recovery","Chest","Swim","Rest","Cardio","Chest","Swim","Recovery","Chest","Swim","Rest"],
+    strength: ["Chest","Rest","Chest","Cardio","Chest","Rest","Rest","Chest","Rest","Chest","Cardio","Chest","Rest","Rest"],
+    mobility: ["Recovery","Swim","Recovery","Rest","Swim","Recovery","Rest","Recovery","Swim","Recovery","Rest","Swim","Recovery","Rest"]
+  };
+  const colors = {
+    Chest:{bg:"#1E3A5F",dot:"#60A5FA"}, Swim:{bg:"#0C4A6E",dot:"#38BDF8"},
+    Cardio:{bg:"#064E3B",dot:"#34D399"}, Recovery:{bg:"#1F2937",dot:"#9CA3AF"},
+    Rest:{bg:"#1C1917",dot:"#57534E"}
+  };
+  const detail = {
+    Chest:"Machine chest press · cable fly · cable crunch circuit",
+    Swim:"Pool interval set — sprint lengths with rest at the wall",
+    Cardio:"Incline treadmill or elliptical, steady-state effort",
+    Recovery:"Foam roll, stretch, and light core activation",
+    Rest:"Full rest — no session scheduled"
+  };
+
+  let goal = "fat", freq = 5;
+  const calGrid = document.getElementById('calGrid');
+  const preview = document.getElementById('genPreview');
+
+  function render(){
+    calGrid.innerHTML = "";
+    const days = plans[goal];
+    days.forEach((type, i) => {
+      const restDay = freq <= 3 ? (i % 3 === 2) : freq <= 5 ? (i % 7 === 6) : false;
+      const t = restDay ? "Rest" : type;
+      const c = colors[t];
+      const el = document.createElement('div');
+      el.className = 'cal-dot';
+      el.style.background = c.bg;
+      el.style.borderColor = c.dot + "55";
+      el.style.color = c.dot;
+      el.textContent = i + 1;
+      el.addEventListener('mouseenter', () => {
+        preview.innerHTML = `<b>Day ${i+1} — ${t}</b><br>${detail[t]}`;
+      });
+      calGrid.appendChild(el);
+    });
+  }
+
+  document.querySelectorAll('#goalRow .chip').forEach(c => c.addEventListener('click', () => {
+    document.querySelectorAll('#goalRow .chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active'); goal = c.dataset.goal; render();
+  }));
+  document.querySelectorAll('#freqRow .chip').forEach(c => c.addEventListener('click', () => {
+    document.querySelectorAll('#freqRow .chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active'); freq = Number(c.dataset.freq); render();
+  }));
+  render();
+
+  // Weekly check-in — manual inputs drive the adaptive verdict (no wearable data)
+  function buildCheckin(){
+    const sessions = document.getElementById('inSessions');
+    const effort = document.getElementById('inEffort');
+    const hr = document.getElementById('inHr');
+    const tag = document.getElementById('verdictTag');
+    const detail = document.getElementById('verdictDetail');
+
+    function verdict(s, e, h){
+      const completion = s/7;
+      if(completion < 0.6 && h > 2){
+        return {t:"PULL BACK", d:`Only ${s}/7 sessions logged and resting HR reported up ${h}bpm — reads as early overreach. Next week's volume drops ~20% and a recovery day replaces the hardest session.`, c:"var(--coral)", bg:"rgba(255,91,91,0.12)"};
+      }
+      if(completion < 0.6){
+        return {t:"REBUILD", d:`Only ${s}/7 sessions logged, but resting HR is steady — reads as a scheduling problem, not overreach. Next week repeats this week's targets instead of progressing.`, c:"var(--sky)", bg:"rgba(91,200,255,0.12)"};
+      }
+      if(completion >= 0.85 && h <= 0 && e <= 3){
+        return {t:"PROGRESS", d:`${s}/7 sessions, resting HR flat or down, effort reported low — next week adds load or a rep to the chest and cardio sessions.`, c:"var(--lime)", bg:"rgba(212,255,63,0.12)"};
+      }
+      return {t:"HOLD STEADY", d:"Numbers are in range — next week repeats this week's plan as written.", c:"var(--lime)", bg:"rgba(212,255,63,0.12)"};
+    }
+
+    function update(){
+      const s = Number(sessions.value), e = Number(effort.value), h = Number(hr.value);
+      document.getElementById('valSessions').textContent = s;
+      document.getElementById('valEffort').textContent = e;
+      document.getElementById('valHr').textContent = (h > 0 ? "+" : "") + h;
+      const v = verdict(s, e, h);
+      tag.textContent = v.t;
+      tag.style.color = v.c;
+      tag.style.background = v.bg;
+      detail.textContent = v.d;
+    }
+    [sessions, effort, hr].forEach(el => el.addEventListener('input', update));
+    update();
+  }
+  buildCheckin();
+
+  // Weekly trend chart — illustrative 12-week data, each metric independently scaled
+  const metrics = {
+    waist:      { label:"Waist (in)", color:"#FF5B5B", data:[42.5,42.3,42.0,41.8,41.6,41.3,40.9,40.5,40.1,39.7,39.2,38.7] },
+    hr:         { label:"Resting HR (bpm)", color:"#5BC8FF", data:[74,73,73,74,76,75,73,71,70,69,67,65] },
+    completion: { label:"Weekly completion (%)", color:"#D4FF3F", data:[60,78,82,68,71,85,90,88,93,90,96,94] }
+  };
+  const adaptWeeks = [4, 9]; // 1-indexed weeks where the engine changed the plan
+
+  function buildChart(){
+    const svg = document.getElementById('chartSvg');
+    const toggles = document.getElementById('chartToggles');
+    const state = {};
+    Object.keys(metrics).forEach(k => state[k] = true);
+    const w = 640, h = 220, pad = 20, n = 12;
+
+    function draw(){
+      svg.innerHTML = "";
+      for(let i=0;i<=3;i++){
+        const y = pad + (h-2*pad)*i/3;
+        const gl = document.createElementNS("http://www.w3.org/2000/svg","line");
+        gl.setAttribute("x1",pad); gl.setAttribute("x2",w-pad);
+        gl.setAttribute("y1",y); gl.setAttribute("y2",y);
+        gl.setAttribute("stroke","#20232C"); gl.setAttribute("stroke-width","1");
+        svg.appendChild(gl);
+      }
+      Object.entries(metrics).forEach(([key,m]) => {
+        if(!state[key]) return;
+        const min = Math.min(...m.data), max = Math.max(...m.data);
+        const pts = m.data.map((v,i) => {
+          const x = pad + (w-2*pad) * i/(n-1);
+          const norm = max===min ? 0.5 : (v-min)/(max-min);
+          const y = h-pad - norm*(h-2*pad);
+          return [x,y];
+        });
+        const poly = document.createElementNS("http://www.w3.org/2000/svg","polyline");
+        poly.setAttribute("points", pts.map(p => p.join(",")).join(" "));
+        poly.setAttribute("fill","none");
+        poly.setAttribute("stroke", m.color);
+        poly.setAttribute("stroke-width","2.5");
+        poly.setAttribute("stroke-linecap","round");
+        poly.setAttribute("stroke-linejoin","round");
+        svg.appendChild(poly);
+
+        pts.forEach((p,i) => {
+          const isAdapt = adaptWeeks.includes(i+1);
+          const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+          c.setAttribute("cx",p[0]); c.setAttribute("cy",p[1]);
+          c.setAttribute("r", isAdapt ? 5.5 : 2.5);
+          c.setAttribute("fill", isAdapt ? "#0A0B0F" : m.color);
+          c.setAttribute("stroke", m.color);
+          c.setAttribute("stroke-width", isAdapt ? 2 : 0);
+          const title = document.createElementNS("http://www.w3.org/2000/svg","title");
+          title.textContent = `Week ${i+1} · ${m.label}: ${m.data[i]}` + (isAdapt ? " — plan adjusted this week" : "");
+          c.appendChild(title);
+          svg.appendChild(c);
+        });
+      });
+    }
+
+    Object.entries(metrics).forEach(([key,m]) => {
+      const chip = document.createElement('div');
+      chip.className = 'chart-toggle';
+      chip.innerHTML = `<span class="sw" style="background:${m.color}"></span>${m.label}`;
+      chip.addEventListener('click', () => {
+        state[key] = !state[key];
+        chip.classList.toggle('off', !state[key]);
+        draw();
+      });
+      toggles.appendChild(chip);
+    });
+    draw();
+  }
+  buildChart();
+
+  // Dashboard mockup grid (static illustrative data)
+  const dashGrid = document.getElementById('dashGrid');
+  const dashTypes = ["Chest","Chest","Cardio","Chest","Rest","Swim","Chest"];
+  for(let i=0;i<63;i++){
+    const done = i < 63;
+    const t = dashTypes[i % dashTypes.length];
+    const c = colors[t];
+    const el = document.createElement('div');
+    el.className = 'dg';
+    el.style.background = done ? c.dot : "#1B1E27";
+    el.style.opacity = done ? 0.9 : 1;
+    dashGrid.appendChild(el);
+  }
+</script>
+
+</body>
+</html>
