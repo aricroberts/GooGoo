@@ -14,7 +14,7 @@
   SUPABASE SETUP — run once in your project's SQL editor, then paste
   your project URL + anon key into the <script> block just below.
 
-  create table plans (
+  create table plans_cust (
     user_id uuid primary key references auth.users(id) on delete cascade,
     goal text not null,
     days_per_week int not null,
@@ -22,20 +22,20 @@
     day_overrides jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now()
   );
-  alter table plans enable row level security;
-  create policy "own plan" on plans for all
+  alter table plans_cust enable row level security;
+  create policy "own plan" on plans_cust for all
     using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-  create table workout_progress (
+  create table workout_progress_cust (
     user_id uuid primary key references auth.users(id) on delete cascade,
     completed_days jsonb not null default '[]'::jsonb,
     updated_at timestamptz not null default now()
   );
-  alter table workout_progress enable row level security;
-  create policy "own progress" on workout_progress for all
+  alter table workout_progress_cust enable row level security;
+  create policy "own progress" on workout_progress_cust for all
     using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-  create table checkins (
+  create table checkins_cust (
     id bigserial primary key,
     user_id uuid not null references auth.users(id) on delete cascade,
     week_number int not null,
@@ -46,8 +46,8 @@
     verdict text not null,
     created_at timestamptz not null default now()
   );
-  alter table checkins enable row level security;
-  create policy "own checkins" on checkins for all
+  alter table checkins_cust enable row level security;
+  create policy "own checkins" on checkins_cust for all
     using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
   In Authentication settings: enable Email provider. Turn off "Confirm
@@ -55,7 +55,7 @@
   ══════════════════════════════════════════════════════════════════
 -->
 <script>
-  window.SUPABASE_URL = "https://ahifyylxnrzwkggmavbs.supabase.co/";
+  window.SUPABASE_URL = "https://ahifyylxnrzwkggmavbs.supabase.co";
   window.SUPABASE_ANON_KEY = "sb_publishable_--svVGvYEdsWfyWicBGITQ_kN8HnQ3v";
 </script>
 
@@ -216,19 +216,19 @@ async function demoDb(path, opts){
   opts = opts || {};
   var method = opts.method || 'GET';
   var body = opts.body ? JSON.parse(opts.body) : null;
-  if(path.indexOf('/plans')===0){
+  if(path.indexOf('/plans_cust')===0){
     var plans = demoStore('pf_demo_plans', []);
     if(method==='GET') return plans.slice(0,1);
     if(method==='POST'){ var row = assign({}, body, { user_id:'demo-user', created_at:new Date().toISOString() }); plans=[row]; demoSave('pf_demo_plans', plans); return [row]; }
     if(method==='PATCH'){ plans[0] = assign({}, plans[0]||{}, body); demoSave('pf_demo_plans', plans); return plans; }
   }
-  if(path.indexOf('/workout_progress')===0){
+  if(path.indexOf('/workout_progress_cust')===0){
     var progRows = demoStore('pf_demo_progress', []);
     if(method==='GET') return progRows.slice(0,1);
     if(method==='POST'){ var prow = assign({}, body, { user_id:'demo-user' }); progRows=[prow]; demoSave('pf_demo_progress', progRows); return [prow]; }
     if(method==='PATCH'){ progRows[0] = assign({}, progRows[0]||{}, body); demoSave('pf_demo_progress', progRows); return progRows; }
   }
-  if(path.indexOf('/checkins')===0){
+  if(path.indexOf('/checkins_cust')===0){
     var ciRows = demoStore('pf_demo_checkins', []);
     if(method==='GET'){
       ciRows = ciRows.slice().sort(function(a,b){ return a.week_number-b.week_number; });
@@ -428,18 +428,18 @@ async function boot(){
 }
 async function loadUserData(){
   try{
-    var plans = await db('/plans?select=*&limit=1');
+    var plans = await db('/plans_cust?select=*&limit=1');
     if(!plans || plans.length===0){ state.screen='onboarding'; render(); return; }
     state.plan = plans[0];
-    var progressRows = await db('/workout_progress?select=*&limit=1');
+    var progressRows = await db('/workout_progress_cust?select=*&limit=1');
     state.progress = (progressRows && progressRows[0]) || { completed_days: [] };
-    var checkins = await db('/checkins?select=*&order=week_number.asc');
+    var checkins = await db('/checkins_cust?select=*&order=week_number.asc');
     state.checkins = checkins || [];
     state.ciSessions = Math.min(7, (state.progress.completed_days||[]).length % 7 || 4);
     state.screen = 'app';
   } catch(e){
     console.error(e);
-    signOut(); state.screen='auth'; state.authError='Session expired — sign in again.';
+    signOut(); state.screen='auth'; state.authError='Session expired — sign in again.'; state.busy=false;
   }
   render();
 }
@@ -460,9 +460,9 @@ async function handleAuthSubmit(email, password){
 async function handleCreatePlan(goal, freq){
   state.busy = true; render();
   var body = { goal:goal, days_per_week:freq, volume_modifier:1.0, day_overrides:{} };
-  var rows = await db('/plans', { method:'POST', body:JSON.stringify(body) });
+  var rows = await db('/plans_cust', { method:'POST', body:JSON.stringify(body) });
   state.plan = rows[0];
-  try{ await db('/workout_progress', { method:'POST', body:JSON.stringify({ completed_days:[] }) }); }catch(e){}
+  try{ await db('/workout_progress_cust', { method:'POST', body:JSON.stringify({ completed_days:[] }) }); }catch(e){}
   state.progress = { completed_days: [] };
   state.busy=false; state.screen='app'; render();
 }
@@ -477,7 +477,7 @@ async function toggleDay(dayNum){
   state.progress.completed_days = next;
   render();
   try{
-    await db('/workout_progress?user_id=eq.'+state.session.user.id, {
+    await db('/workout_progress_cust?user_id=eq.'+state.session.user.id, {
       method:'PATCH',
       body: JSON.stringify({ completed_days: state.progress.completed_days, updated_at: new Date().toISOString() })
     });
@@ -490,12 +490,12 @@ async function submitCheckin(){
   var weekNumber = state.checkins.length + 1;
   state.busy = true; render();
   var updatedPlan = applyAdaptation(state.plan, currentDay, v);
-  await db('/plans?user_id=eq.'+state.session.user.id, {
+  await db('/plans_cust?user_id=eq.'+state.session.user.id, {
     method:'PATCH',
     body: JSON.stringify({ volume_modifier: updatedPlan.volume_modifier, day_overrides: updatedPlan.day_overrides })
   });
   state.plan = updatedPlan;
-  var row = await db('/checkins', {
+  var row = await db('/checkins_cust', {
     method:'POST',
     body: JSON.stringify({ week_number: weekNumber, sessions_completed:s, effort:e, hr_delta:h, waist: w||null, verdict:v.tag })
   });
