@@ -50,6 +50,14 @@
   create policy "own checkins" on checkins_cust for all
     using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+  -- RLS policies alone are not enough — Postgres also requires a base
+  -- table grant before RLS is even evaluated. Tables created via the SQL
+  -- Editor (rather than the Table Editor UI) don't get this automatically.
+  grant select, insert, update on public.plans_cust to authenticated;
+  grant select, insert, update on public.workout_progress_cust to authenticated;
+  grant select, insert on public.checkins_cust to authenticated;
+  grant usage, select on sequence public.checkins_cust_id_seq to authenticated;
+
   In Authentication settings: enable Email provider. Turn off "Confirm
   email" while testing so signup logs straight in.
   ══════════════════════════════════════════════════════════════════
@@ -459,12 +467,19 @@ async function handleAuthSubmit(email, password){
 }
 async function handleCreatePlan(goal, freq){
   state.busy = true; render();
-  var body = { goal:goal, days_per_week:freq, volume_modifier:1.0, day_overrides:{} };
-  var rows = await db('/plans_cust', { method:'POST', body:JSON.stringify(body) });
-  state.plan = rows[0];
-  try{ await db('/workout_progress_cust', { method:'POST', body:JSON.stringify({ completed_days:[] }) }); }catch(e){}
-  state.progress = { completed_days: [] };
-  state.busy=false; state.screen='app'; render();
+  try{
+    var body = { user_id: state.session.user.id, goal:goal, days_per_week:freq, volume_modifier:1.0, day_overrides:{} };
+    var rows = await db('/plans_cust', { method:'POST', body:JSON.stringify(body) });
+    state.plan = rows[0];
+    await db('/workout_progress_cust', { method:'POST', body:JSON.stringify({ user_id: state.session.user.id, completed_days:[] }) });
+    state.progress = { completed_days: [] };
+    state.busy=false; state.screen='app'; render();
+  } catch(e){
+    console.error(e);
+    state.busy=false;
+    alert('Could not generate your plan: ' + e.message);
+    render();
+  }
 }
 async function toggleDay(dayNum){
   var set = {};
@@ -489,19 +504,26 @@ async function submitCheckin(){
   var currentDay = (state.progress.completed_days||[]).length || 1;
   var weekNumber = state.checkins.length + 1;
   state.busy = true; render();
-  var updatedPlan = applyAdaptation(state.plan, currentDay, v);
-  await db('/plans_cust?user_id=eq.'+state.session.user.id, {
-    method:'PATCH',
-    body: JSON.stringify({ volume_modifier: updatedPlan.volume_modifier, day_overrides: updatedPlan.day_overrides })
-  });
-  state.plan = updatedPlan;
-  var row = await db('/checkins_cust', {
-    method:'POST',
-    body: JSON.stringify({ week_number: weekNumber, sessions_completed:s, effort:e, hr_delta:h, waist: w||null, verdict:v.tag })
-  });
-  state.checkins = state.checkins.concat([row[0]]);
-  state.busy = false;
-  render();
+  try{
+    var updatedPlan = applyAdaptation(state.plan, currentDay, v);
+    await db('/plans_cust?user_id=eq.'+state.session.user.id, {
+      method:'PATCH',
+      body: JSON.stringify({ volume_modifier: updatedPlan.volume_modifier, day_overrides: updatedPlan.day_overrides })
+    });
+    state.plan = updatedPlan;
+    var row = await db('/checkins_cust', {
+      method:'POST',
+      body: JSON.stringify({ user_id: state.session.user.id, week_number: weekNumber, sessions_completed:s, effort:e, hr_delta:h, waist: w||null, verdict:v.tag })
+    });
+    state.checkins = state.checkins.concat([row[0]]);
+    state.busy = false;
+    render();
+  } catch(err){
+    console.error(err);
+    state.busy = false;
+    alert('Could not save your check-in: ' + err.message);
+    render();
+  }
 }
 
 /* ═══════════════════════════ RENDER: SHELLS ═══════════════════════════ */
