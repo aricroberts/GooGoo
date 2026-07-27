@@ -19,6 +19,7 @@
     goal text not null,
     days_per_week int not null,
     sex text,
+    cardio_types jsonb not null default '[]'::jsonb,
     volume_modifier numeric not null default 1.0,
     day_overrides jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now()
@@ -254,7 +255,7 @@ async function resumePendingActionIfAny(){
     state.ciHr = action.payload.hr; state.ciWaist = action.payload.waist;
     await submitCheckin(true);
   } else if(action.type === 'newplan'){
-    await handleCreatePlan(action.payload.goal, action.payload.freq, action.payload.sex, true);
+    await handleCreatePlan(action.payload.goal, action.payload.freq, action.payload.sex, action.payload.cardioTypes, true);
   }
 }
 var DEMO = localStorage.getItem('pf_demo_mode') === '1';
@@ -390,12 +391,29 @@ function isRestSlot(weekdayIdx, freq){
   for(var k=0;k<restCount;k++){ if(Math.round(k*(7/restCount)) === weekdayIdx) return true; }
   return false;
 }
-function buildDetail(type, phaseId, volMod, sex){
+var CARDIO_ACTIVITIES = {
+  running:    { label:'Running',                 build:function(min){ return min+' min run — steady pace, easy conversation effort'; } },
+  cycling:    { label:'Cycling',                  build:function(min){ return 'Stationary bike or outdoor ride, '+min+' min steady effort'; } },
+  swimming:   { label:'Swimming',                 build:function(min){ return 'Pool laps, '+min+' min — freestyle or your preferred stroke'; } },
+  rowing:     { label:'Rowing',                   build:function(min){ return 'Rowing machine, '+min+' min steady state'; } },
+  group:      { label:'Group fitness class',      build:function(min){ return min+' min group fitness class — spin, dance, bootcamp, whatever\'s on the schedule'; } },
+  yoga:       { label:'Yoga / mobility flow',      build:function(min){ return min+' min yoga or mobility flow — lower intensity, still counts'; } },
+  elliptical: { label:'Elliptical / incline walk', build:function(min){ return 'Elliptical or incline treadmill walk, '+min+' min steady effort'; } }
+};
+var CARDIO_DEFAULT_POOL = ['elliptical','cycling','running'];
+
+function buildDetail(type, phaseId, volMod, sex, dayNum, cardioTypes){
   var sr = baseSetsReps(phaseId);
   var sets = Math.max(2, Math.round(sr.sets*volMod));
   var reps = sr.reps;
   if(type==='Chest') return sets+'×'+reps+' machine chest press · '+sets+'×'+reps+' cable fly · '+Math.max(3,sets)+'×'+(reps+3)+' cable crunch';
-  if(type==='Cardio') return 'Incline treadmill or bike, '+Math.round((15+phaseId*7)*volMod)+' min steady effort';
+  if(type==='Cardio'){
+    var pool = (cardioTypes && cardioTypes.length) ? cardioTypes : CARDIO_DEFAULT_POOL;
+    var key = pool[(dayNum||0) % pool.length];
+    var activity = CARDIO_ACTIVITIES[key] || CARDIO_ACTIVITIES.elliptical;
+    var min = Math.round((15+phaseId*7)*volMod);
+    return activity.build(min);
+  }
   if(type==='Swim') return 'Pool session, '+Math.round((20+phaseId*6)*volMod)+' min — mix steady laps and short intervals';
   if(type==='HIIT') return (6+phaseId)+' rounds: '+(30+phaseId*5)+'s max effort / '+Math.max(20,60-phaseId*5)+'s easy';
   if(type==='Recovery'){
@@ -423,7 +441,7 @@ function generateDayMap(plan){
     var overrides = plan.day_overrides || {};
     var override = overrides[d];
     if(override){ type = override.type; note = override.note; }
-    map[d] = { type:type, label: type+' Day', detail: buildDetail(type, phase.id, plan.volume_modifier||1, plan.sex), phase: phase.id, note:note };
+    map[d] = { type:type, label: type+' Day', detail: buildDetail(type, phase.id, plan.volume_modifier||1, plan.sex, d, plan.cardio_types), phase: phase.id, note:note };
   }
   return map;
 }
@@ -547,18 +565,18 @@ async function handleAuthSubmit(email, password){
     state.authError = e.message; state.busy=false; render();
   }
 }
-async function handleCreatePlan(goal, freq, sex, skipGate){
+async function handleCreatePlan(goal, freq, sex, cardioTypes, skipGate){
   var isRegenerate = !!state.plan;
   if(isRegenerate && !skipGate){
     if(!isActionUnlocked()){
-      redirectToPay({type:'newplan', payload:{goal:goal, freq:freq, sex:sex}});
+      redirectToPay({type:'newplan', payload:{goal:goal, freq:freq, sex:sex, cardioTypes:cardioTypes}});
       return;
     }
     consumeUnlock();
   }
   state.busy = true; render();
   try{
-    var body = { user_id: state.session.user.id, goal:goal, days_per_week:freq, sex: sex||null, volume_modifier:1.0, day_overrides:{} };
+    var body = { user_id: state.session.user.id, goal:goal, days_per_week:freq, sex: sex||null, cardio_types: cardioTypes||[], volume_modifier:1.0, day_overrides:{} };
     var rows;
     if(isRegenerate){
       rows = await db('/plans_cust?user_id=eq.'+state.session.user.id, { method:'PATCH', body:JSON.stringify(body) });
@@ -684,6 +702,17 @@ function renderOnboarding(){
     +   '<div class="chip active" data-freq="5">5</div>'
     +   '<div class="chip" data-freq="6">6</div>'
     + '</div>'
+    + '<div class="onb-label">CARDIO STYLE <span style="color:var(--muted-dim); text-transform:none; font-weight:400;">(optional, pick any)</span></div>'
+    + '<div class="chip-row" id="cardioChips">'
+    +   '<div class="chip" data-cardio="running">Running</div>'
+    +   '<div class="chip" data-cardio="cycling">Cycling</div>'
+    +   '<div class="chip" data-cardio="swimming">Swimming</div>'
+    +   '<div class="chip" data-cardio="rowing">Rowing</div>'
+    +   '<div class="chip" data-cardio="group">Group class</div>'
+    +   '<div class="chip" data-cardio="yoga">Yoga</div>'
+    +   '<div class="chip" data-cardio="elliptical">Elliptical</div>'
+    + '</div>'
+    + '<div class="onb-hint">Cardio days rotate through whatever you pick here. Skip it and we rotate a sensible default (elliptical, cycling, running) instead.</div>'
     + '<div class="onb-label">BIOLOGICAL PROFILE <span style="color:var(--muted-dim); text-transform:none; font-weight:400;">(optional)</span></div>'
     + '<div class="chip-row" id="sexChips">'
     +   '<div class="chip" data-sex="female">Female</div>'
@@ -941,6 +970,19 @@ function wireEvents(){
         };
       })(freqChips[gi]);
     }
+    var cardioTypes = [];
+    var cardioChips = document.querySelectorAll('#cardioChips .chip');
+    for(gi=0; gi<cardioChips.length; gi++){
+      (function(chip){
+        chip.onclick = function(){
+          chip.classList.toggle('active');
+          var val = chip.dataset.cardio;
+          var idx = cardioTypes.indexOf(val);
+          if(chip.classList.contains('active')){ if(idx===-1) cardioTypes.push(val); }
+          else { if(idx!==-1) cardioTypes.splice(idx,1); }
+        };
+      })(cardioChips[gi]);
+    }
     var sex = '';
     var sexChips = document.querySelectorAll('#sexChips .chip');
     for(gi=0; gi<sexChips.length; gi++){
@@ -952,7 +994,7 @@ function wireEvents(){
         };
       })(sexChips[gi]);
     }
-    el('onbSubmit').onclick = function(){ handleCreatePlan(goal, freq, sex); };
+    el('onbSubmit').onclick = function(){ handleCreatePlan(goal, freq, sex, cardioTypes); };
     var cancelBtn = el('onbCancel');
     if(cancelBtn) cancelBtn.onclick = function(){ state.screen='app'; render(); };
   }
