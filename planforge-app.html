@@ -66,6 +66,11 @@
 <script>
   window.SUPABASE_URL = "https://ahifyylxnrzwkggmavbs.supabase.co";
   window.SUPABASE_ANON_KEY = "sb_publishable_--svVGvYEdsWfyWicBGITQ_kN8HnQ3v";
+  // $2 flat, no subscription. First plan is free — every check-in after
+  // that, and every plan regeneration after the first, uses this same
+  // Payment Link. Success URL in the Stripe Dashboard should redirect
+  // back here with ?pf_unlock=1 appended.
+  window.STRIPE_PAY_LINK = "YOUR_STRIPE_PAYMENT_LINK";
 </script>
 
 <style>
@@ -216,6 +221,42 @@
 var SB_URL = window.SUPABASE_URL;
 var SB_KEY = window.SUPABASE_ANON_KEY;
 var CONFIGURED = SB_URL && SB_URL !== "YOUR_SUPABASE_URL" && SB_KEY && SB_KEY !== "YOUR_SUPABASE_ANON_KEY";
+
+/* ═══════════════════════════ $2 PAYWALL (no subscription) ═══════════════════════════
+   First plan is free. Every check-in after that, and every plan
+   regeneration after the first, requires the same $2 Payment Link.
+   Client-trust unlock (matches the sessionStorage pattern used across
+   the rest of the ACL suite) — no webhook/backend verification here. */
+var STRIPE_PAY_LINK = window.STRIPE_PAY_LINK;
+var STRIPE_CONFIGURED = STRIPE_PAY_LINK && STRIPE_PAY_LINK !== "YOUR_STRIPE_PAYMENT_LINK";
+
+function isActionUnlocked(){ return DEMO || sessionStorage.getItem('pf_action_unlocked') === '1'; }
+function consumeUnlock(){ sessionStorage.removeItem('pf_action_unlocked'); }
+function redirectToPay(pendingAction){
+  if(!STRIPE_CONFIGURED){ alert('Payments aren\'t configured yet — paste your Stripe Payment Link into window.STRIPE_PAY_LINK near the top of this file.'); return; }
+  sessionStorage.setItem('pf_pending_action', JSON.stringify(pendingAction));
+  window.location.href = STRIPE_PAY_LINK;
+}
+function checkPaymentReturn(){
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('pf_unlock') === '1'){
+    sessionStorage.setItem('pf_action_unlocked', '1');
+    history.replaceState({}, '', window.location.pathname);
+  }
+}
+async function resumePendingActionIfAny(){
+  var pending = sessionStorage.getItem('pf_pending_action');
+  if(!pending || !isActionUnlocked()) return;
+  var action = JSON.parse(pending);
+  sessionStorage.removeItem('pf_pending_action');
+  if(action.type === 'checkin'){
+    state.ciSessions = action.payload.sessions; state.ciEffort = action.payload.effort;
+    state.ciHr = action.payload.hr; state.ciWaist = action.payload.waist;
+    await submitCheckin(true);
+  } else if(action.type === 'newplan'){
+    await handleCreatePlan(action.payload.goal, action.payload.freq, action.payload.sex, true);
+  }
+}
 var DEMO = localStorage.getItem('pf_demo_mode') === '1';
 
 function demoStore(key, def){ try{ var v = JSON.parse(localStorage.getItem(key)); return v==null?def:v; }catch(e){ return def; } }
@@ -441,10 +482,12 @@ var state = {
 };
 
 async function boot(){
-  if(DEMO){ state.session = { access_token:'demo', user:{ id:'demo-user', email:'demo@local (sample data)' } }; await loadUserData(); return; }
+  checkPaymentReturn();
+  if(DEMO){ state.session = { access_token:'demo', user:{ id:'demo-user', email:'demo@local (sample data)' } }; await loadUserData(); await resumePendingActionIfAny(); return; }
   if(!CONFIGURED){ state.screen='config'; render(); return; }
   if(!state.session){ state.screen='auth'; render(); return; }
   await loadUserData();
+  await resumePendingActionIfAny();
 }
 async function loadUserData(){
   try{
@@ -477,13 +520,27 @@ async function handleAuthSubmit(email, password){
     state.authError = e.message; state.busy=false; render();
   }
 }
-async function handleCreatePlan(goal, freq, sex){
+async function handleCreatePlan(goal, freq, sex, skipGate){
+  var isRegenerate = !!state.plan;
+  if(isRegenerate && !skipGate){
+    if(!isActionUnlocked()){
+      redirectToPay({type:'newplan', payload:{goal:goal, freq:freq, sex:sex}});
+      return;
+    }
+    consumeUnlock();
+  }
   state.busy = true; render();
   try{
     var body = { user_id: state.session.user.id, goal:goal, days_per_week:freq, sex: sex||null, volume_modifier:1.0, day_overrides:{} };
-    var rows = await db('/plans_cust', { method:'POST', body:JSON.stringify(body) });
+    var rows;
+    if(isRegenerate){
+      rows = await db('/plans_cust?user_id=eq.'+state.session.user.id, { method:'PATCH', body:JSON.stringify(body) });
+      await db('/workout_progress_cust?user_id=eq.'+state.session.user.id, { method:'PATCH', body:JSON.stringify({ completed_days:[], updated_at: new Date().toISOString() }) });
+    } else {
+      rows = await db('/plans_cust', { method:'POST', body:JSON.stringify(body) });
+      await db('/workout_progress_cust', { method:'POST', body:JSON.stringify({ user_id: state.session.user.id, completed_days:[] }) });
+    }
     state.plan = rows[0];
-    await db('/workout_progress_cust', { method:'POST', body:JSON.stringify({ user_id: state.session.user.id, completed_days:[] }) });
     state.progress = { completed_days: [] };
     state.busy=false; state.screen='app'; render();
   } catch(e){
@@ -510,8 +567,15 @@ async function toggleDay(dayNum){
     });
   } catch(e){ console.error(e); }
 }
-async function submitCheckin(){
+async function submitCheckin(skipGate){
   var s = state.ciSessions, e = state.ciEffort, h = state.ciHr, w = state.ciWaist;
+  if(!skipGate){
+    if(!isActionUnlocked()){
+      redirectToPay({type:'checkin', payload:{sessions:s, effort:e, hr:h, waist:w}});
+      return;
+    }
+    consumeUnlock();
+  }
   var v = checkinVerdict(s, e, h);
   var currentDay = (state.progress.completed_days||[]).length || 1;
   var weekNumber = state.checkins.length + 1;
@@ -573,10 +637,13 @@ function renderAuth(){
 }
 
 function renderOnboarding(){
+  var isRegen = !!state.plan;
   return '<div class="onb-shell"><div class="onb-card">'
-    + '<div class="onb-eyebrow">STEP 1 OF 1 · BUILD YOUR PLAN</div>'
-    + '<div class="onb-title">What are we training for?</div>'
-    + '<div class="onb-sub">This generates your 100-day day-by-day plan. Nothing here is hardcoded — change your goal or frequency later and it regenerates.</div>'
+    + '<div class="onb-eyebrow">' + (isRegen ? 'REGENERATE YOUR PLAN' : 'STEP 1 OF 1 · BUILD YOUR PLAN') + '</div>'
+    + '<div class="onb-title">' + (isRegen ? 'Want a different plan?' : 'What are we training for?') + '</div>'
+    + '<div class="onb-sub">' + (isRegen
+        ? 'This overwrites your current plan and resets your day-by-day progress. Your check-in history is kept. First plan was free — this one\'s $2, no subscription.'
+        : 'This generates your 100-day day-by-day plan. Nothing here is hardcoded — your first plan is free.') + '</div>'
     + '<div class="onb-label">GOAL</div>'
     + '<div class="chip-row" id="goalChips">'
     +   '<div class="chip active" data-goal="fat">Fat loss</div>'
@@ -596,14 +663,15 @@ function renderOnboarding(){
     +   '<div class="chip active" data-sex="">Skip</div>'
     + '</div>'
     + '<div class="onb-hint">Used only to add default hip/glute stability work where the research supports it (e.g. ACL-injury-risk-informed programming). Not medical guidance — skip it and nothing changes.</div>'
-    + '<button class="btn btn-primary btn-block" id="onbSubmit" style="margin-top:28px;" '+(state.busy?'disabled':'')+'>'+(state.busy?'Generating…':'Generate my plan')+'</button>'
+    + '<button class="btn btn-primary btn-block" id="onbSubmit" style="margin-top:28px;" '+(state.busy?'disabled':'')+'>'+(state.busy?'Generating…':(isRegen?'Generate new plan — $2':'Generate my plan — free'))+'</button>'
+    + (isRegen ? '<button class="btn btn-ghost btn-block" id="onbCancel" style="margin-top:10px;">Cancel</button>' : '')
     + '</div></div>';
 }
 
 function renderNav(){
   return '<nav><div class="navwrap">'
     + '<div class="logo"><span class="dot"></span>PLANFORGE<span class="pillar-tag mono">ACL · P5'+(DEMO ? ' · DEMO' : '')+'</span></div>'
-    + '<div class="nav-user"><a href="https://googoo.aricciviclabs.org/plan-accounts-pitch.html" class="btn btn-ghost btn-sm">About</a>'+state.session.user.email+' <a id="signOutBtn" class="btn btn-ghost btn-sm">'+(DEMO?'Reset demo':'Sign out')+'</a></div>'
+    + '<div class="nav-user"><a href="https://googoo.aricciviclabs.org/plan-accounts-pitch.html" class="btn btn-ghost btn-sm">About</a><a id="newPlanBtn" class="btn btn-ghost btn-sm">New plan</a>'+state.session.user.email+' <a id="signOutBtn" class="btn btn-ghost btn-sm">'+(DEMO?'Reset demo':'Sign out')+'</a></div>'
     + '</div></nav>';
 }
 
@@ -677,7 +745,7 @@ function renderAppBody(){
     +     '<div class="ci-field"><div class="ci-label">Waist this week (in)</div><input type="number" step="0.1" placeholder="optional" value="'+state.ciWaist+'" id="inWaist" /></div>'
     +   '</div>'
     +   '<div class="verdict-box" id="verdictBox"></div>'
-    +   '<button class="btn btn-primary btn-block" id="ciSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy?'Updating plan…':'Submit check-in & update plan')+'</button>'
+    +   '<button class="btn btn-primary btn-block" id="ciSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy?'Updating plan…':'Submit check-in — $2')+'</button>'
     +   (state.checkins.length ? '<div class="last-checkin">Last check-in: week '+state.checkins[state.checkins.length-1].week_number+' → '+state.checkins[state.checkins.length-1].verdict+'</div>' : '')
     + '</div>'
 
@@ -856,9 +924,12 @@ function wireEvents(){
       })(sexChips[gi]);
     }
     el('onbSubmit').onclick = function(){ handleCreatePlan(goal, freq, sex); };
+    var cancelBtn = el('onbCancel');
+    if(cancelBtn) cancelBtn.onclick = function(){ state.screen='app'; render(); };
   }
   if(state.screen==='app'){
     el('signOutBtn').onclick = DEMO ? resetDemo : signOut;
+    el('newPlanBtn').onclick = function(){ state.screen='onboarding'; render(); };
 
     var toggleBtns = document.querySelectorAll('[data-toggle]');
     var i;
@@ -889,7 +960,7 @@ function wireEvents(){
     sEl.oninput = updateVerdict; eEl.oninput = updateVerdict; hEl.oninput = updateVerdict;
     wEl.oninput = function(){ state.ciWaist = wEl.value; };
     updateVerdict();
-    el('ciSubmit').onclick = submitCheckin;
+    el('ciSubmit').onclick = function(){ submitCheckin(); };
 
     buildProgressChart();
   }
