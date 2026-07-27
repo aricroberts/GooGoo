@@ -107,6 +107,22 @@
   .trust-item{display:flex; align-items:center; gap:.6rem; font-size:13.5px; color:var(--text2); font-weight:500;}
   .trust-item i{color:var(--p5); font-size:18px;}
 
+  /* SEASON 1 */
+  .season{padding:5.5rem 4rem; background:var(--cream); border-top:1px solid var(--border); border-bottom:1px solid var(--border);}
+  .season-inner{max-width:920px; margin:0 auto; text-align:center;}
+  .season-eyebrow{font-family:'DM Mono',monospace; font-size:10.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--p5); margin-bottom:1rem;}
+  .season-h2{font-family:'Libre Caslon Display',serif; font-size:clamp(1.8rem,3vw,2.6rem); color:var(--navy); margin-bottom:1rem; line-height:1.2;}
+  .season-sub{font-size:14.5px; font-weight:300; color:var(--text2); max-width:600px; margin:0 auto 2.5rem; line-height:1.75;}
+  .episode-grid{display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; text-align:left;}
+  @media(max-width:700px){.episode-grid{grid-template-columns:1fr;}}
+  .episode-card{background:#fff; border:1.5px solid var(--border); border-radius:16px; padding:1.75rem; display:flex; flex-direction:column;}
+  .episode-card.current{border-color:var(--p5-bd);}
+  .episode-tag{font-family:'DM Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--p5); margin-bottom:.75rem;}
+  .episode-title{font-family:'Libre Caslon Display',serif; font-size:1.3rem; color:var(--navy); margin-bottom:.5rem;}
+  .episode-desc{font-size:13px; font-weight:300; line-height:1.7; color:var(--text2); margin-bottom:1.25rem; flex:1;}
+  .episode-link{font-size:13px; font-weight:700; color:var(--p5); display:inline-flex; align-items:center; gap:.4rem; text-decoration:none;}
+  .episode-here{font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.04em;}
+
   /* SUITE FOOTER */
   .acl-suite-footer{padding:36px 28px 28px; background:var(--parchment);}
   .acl-suite-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px 24px;max-width:960px;margin:0 auto 20px;}
@@ -222,6 +238,28 @@
 </section>
 
 <!-- CTA -->
+<section class="season" id="season">
+  <div class="season-inner">
+    <div class="season-eyebrow">AricCivicLabs · Health &amp; Vitality</div>
+    <h2 class="season-h2">Season 1: how your body actually runs.</h2>
+    <p class="season-sub">Two tools, same season — one plans what you eat, the other plans how you move. Coming next: they talk to each other.</p>
+    <div class="episode-grid">
+      <div class="episode-card current">
+        <div class="episode-tag">Season 1 · Episode 1</div>
+        <div class="episode-title">goo-goo — Energy Rhythm Planner</div>
+        <p class="episode-desc">Learns your real energy dips and builds your week of meals around them, instead of around the clock. Free, private, no account.</p>
+        <span class="episode-here">You're here</span>
+      </div>
+      <div class="episode-card">
+        <div class="episode-tag">Season 1 · Episode 2</div>
+        <div class="episode-title">PlanForge — Adaptive Workout Plan</div>
+        <p class="episode-desc">A generated 100-day workout plan that adjusts weekly from your own check-ins — sessions completed, effort, resting heart rate. First plan free, check-ins always free, $2 for a new 100-day plan built from your progress.</p>
+        <a href="https://googoo.aricciviclabs.org/planforge-app.html" class="episode-link">Try PlanForge →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="cta-banner">
   <div class="cta-inner">
     <h2 class="cta-h2">"Ready to stop guessing what's for dinner?"</h2>
@@ -234,8 +272,8 @@
 <section class="next">
   <div class="next-inner">
     <div class="next-badge"><i class="ti ti-telescope"></i> On the horizon</div>
-    <h2 class="next-h2">Someday, goo-goo won't have to ask.</h2>
-    <p class="next-body">We're exploring a future where goo-goo reads your body's real signals directly — from your watch, your ring, or your phone — and adjusts your week automatically. Today, you tell it your rhythm. Down the road, it could just know.</p>
+    <h2 class="next-h2">Soon, goo-goo won't have to ask — PlanForge will already know.</h2>
+    <p class="next-body">If you're also running a PlanForge workout plan (Season 1, Episode 2), your training days and effort level will be able to preset goo-goo's meal timing and portions automatically — a heavier training day gets a heartier plate, no extra questions. Reading signals straight from a watch or ring comes after that.</p>
   </div>
 </section>
 
@@ -271,9 +309,10 @@
       <a href="https://civic.aricciviclabs.org/">Civic &amp; Rights Index</a>
     </div>
     <div class="acl-suite-col">
-      <div class="acl-suite-label">goo-goo</div>
-      <span class="acl-suite-here">You're here</span>
+      <div class="acl-suite-label">🌱 Health &amp; Vitality</div>
+      <span class="acl-suite-here">goo-goo (S1E1) — you're here</span>
       <a href="/s1e1">Try the planner</a>
+      <a href="https://googoo.aricciviclabs.org/planforge-app.html">PlanForge (S1E2)</a>
     </div>
   </div>
   <div class="acl-suite-meta">
