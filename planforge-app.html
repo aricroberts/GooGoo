@@ -67,10 +67,11 @@
 <script>
   window.SUPABASE_URL = "https://ahifyylxnrzwkggmavbs.supabase.co";
   window.SUPABASE_ANON_KEY = "sb_publishable_--svVGvYEdsWfyWicBGITQ_kN8HnQ3v";
-  // $2 flat, no subscription. First plan is free — every check-in after
-  // that, and every plan regeneration after the first, uses this same
-  // Payment Link. Success URL in the Stripe Dashboard should redirect
-  // back here with ?pf_unlock=1 appended.
+  // $2 flat, no subscription. First 100-day plan is free. Weekly check-ins
+  // are always free — that's the adaptive loop, not a paid action. Every
+  // NEW 100-day plan after the first (generated from your completion/
+  // progress on the previous one) uses this Payment Link. Success URL in
+  // the Stripe Dashboard should redirect back here with ?pf_unlock=1 appended.
   window.STRIPE_PAY_LINK = "YOUR_STRIPE_PAYMENT_LINK";
 </script>
 
@@ -224,8 +225,9 @@ var SB_KEY = window.SUPABASE_ANON_KEY;
 var CONFIGURED = SB_URL && SB_URL !== "YOUR_SUPABASE_URL" && SB_KEY && SB_KEY !== "YOUR_SUPABASE_ANON_KEY";
 
 /* ═══════════════════════════ $2 PAYWALL (no subscription) ═══════════════════════════
-   First plan is free. Every check-in after that, and every plan
-   regeneration after the first, requires the same $2 Payment Link.
+   First 100-day plan is free. Check-ins are always free — they're the
+   adaptive loop, not billable events. Only generating a NEW 100-day plan
+   after the first one (built from your completion/progress on it) costs $2.
    Client-trust unlock (matches the sessionStorage pattern used across
    the rest of the ACL suite) — no webhook/backend verification here. */
 var STRIPE_PAY_LINK = window.STRIPE_PAY_LINK;
@@ -250,11 +252,7 @@ async function resumePendingActionIfAny(){
   if(!pending || !isActionUnlocked()) return;
   var action = JSON.parse(pending);
   sessionStorage.removeItem('pf_pending_action');
-  if(action.type === 'checkin'){
-    state.ciSessions = action.payload.sessions; state.ciEffort = action.payload.effort;
-    state.ciHr = action.payload.hr; state.ciWaist = action.payload.waist;
-    await submitCheckin(true);
-  } else if(action.type === 'newplan'){
+  if(action.type === 'newplan'){
     await handleCreatePlan(action.payload.goal, action.payload.freq, action.payload.sex, action.payload.cardioTypes, true);
   }
 }
@@ -440,7 +438,7 @@ function generateDayMap(plan){
     var note = null;
     var overrides = plan.day_overrides || {};
     var override = overrides[d];
-    if(override){ type = override.type; note = override.note; }
+    if(override){ type = override.type || type; note = override.note; }
     map[d] = { type:type, label: type+' Day', detail: buildDetail(type, phase.id, plan.volume_modifier||1, plan.sex, d, plan.cardio_types), phase: phase.id, note:note };
   }
   return map;
@@ -576,7 +574,21 @@ async function handleCreatePlan(goal, freq, sex, cardioTypes, skipGate){
   }
   state.busy = true; render();
   try{
-    var body = { user_id: state.session.user.id, goal:goal, days_per_week:freq, sex: sex||null, cardio_types: cardioTypes||[], volume_modifier:1.0, day_overrides:{} };
+    // New plan starts from where the last one left off, not a blank baseline —
+    // carry forward the prior plan's adapted volume, then nudge by how much of
+    // it actually got completed.
+    var completedCount = (state.progress.completed_days||[]).length;
+    var startVolMod = 1.0;
+    var dayOverrides = {};
+    if(isRegenerate){
+      startVolMod = (state.plan && state.plan.volume_modifier) || 1.0;
+      var completionRatio = completedCount/100;
+      if(completionRatio >= 0.7) startVolMod += 0.05;
+      else if(completionRatio < 0.3) startVolMod -= 0.05;
+      startVolMod = Math.max(0.8, Math.min(1.3, startVolMod));
+      dayOverrides[1] = { note: 'New plan started at ' + Math.round(startVolMod*100) + '% volume — carried forward from ' + completedCount + ' days logged on your last plan.' };
+    }
+    var body = { user_id: state.session.user.id, goal:goal, days_per_week:freq, sex: sex||null, cardio_types: cardioTypes||[], volume_modifier: startVolMod, day_overrides: dayOverrides };
     var rows;
     if(isRegenerate){
       rows = await db('/plans_cust?user_id=eq.'+state.session.user.id, { method:'PATCH', body:JSON.stringify(body) });
@@ -613,15 +625,8 @@ async function toggleDay(dayNum){
     });
   } catch(e){ console.error(e); }
 }
-async function submitCheckin(skipGate){
+async function submitCheckin(){
   var s = state.ciSessions, e = state.ciEffort, h = state.ciHr, w = state.ciWaist;
-  if(!skipGate){
-    if(!isActionUnlocked()){
-      redirectToPay({type:'checkin', payload:{sessions:s, effort:e, hr:h, waist:w}});
-      return;
-    }
-    consumeUnlock();
-  }
   var v = checkinVerdict(s, e, h);
   var currentDay = (state.progress.completed_days||[]).length || 1;
   var weekNumber = state.checkins.length + 1;
@@ -688,7 +693,7 @@ function renderOnboarding(){
     + '<div class="onb-eyebrow">' + (isRegen ? 'REGENERATE YOUR PLAN' : 'STEP 1 OF 1 · BUILD YOUR PLAN') + '</div>'
     + '<div class="onb-title">' + (isRegen ? 'Want a different plan?' : 'What are we training for?') + '</div>'
     + '<div class="onb-sub">' + (isRegen
-        ? 'This overwrites your current plan and resets your day-by-day progress. Your check-in history is kept. First plan was free — this one\'s $2, no subscription.'
+        ? 'This starts a new 100-day plan, carried forward from your progress on this one — not reset to zero. Your check-in history is kept. First plan was free; a new plan after it is $2.'
         : 'This generates your 100-day day-by-day plan. Nothing here is hardcoded — your first plan is free.') + '</div>'
     + '<div class="onb-label">GOAL</div>'
     + '<div class="chip-row" id="goalChips">'
@@ -802,7 +807,7 @@ function renderAppBody(){
     +     '<div class="ci-field"><div class="ci-label">Waist this week (in)</div><input type="number" step="0.1" placeholder="optional" value="'+state.ciWaist+'" id="inWaist" /></div>'
     +   '</div>'
     +   '<div class="verdict-box" id="verdictBox"></div>'
-    +   '<button class="btn btn-primary btn-block" id="ciSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy?'Updating plan…':'Submit check-in — $2')+'</button>'
+    +   '<button class="btn btn-primary btn-block" id="ciSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy?'Updating plan…':'Submit check-in & update plan')+'</button>'
     +   (state.checkins.length ? '<div class="last-checkin">Last check-in: week '+state.checkins[state.checkins.length-1].week_number+' → '+state.checkins[state.checkins.length-1].verdict+'</div>' : '')
     + '</div>'
 
