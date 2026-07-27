@@ -18,6 +18,7 @@
     user_id uuid primary key references auth.users(id) on delete cascade,
     goal text not null,
     days_per_week int not null,
+    sex text,
     volume_modifier numeric not null default 1.0,
     day_overrides jsonb not null default '{}'::jsonb,
     created_at timestamptz not null default now()
@@ -116,12 +117,13 @@
   .onb-title{font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:32px; text-transform:uppercase; margin-bottom:8px; line-height:1;}
   .onb-sub{color:var(--muted); font-size:14px; margin-bottom:26px;}
   .onb-label{font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace; letter-spacing:.06em; margin:20px 0 10px;}
+  .onb-hint{font-size:12px; color:var(--muted-dim); line-height:1.5; margin-top:8px;}
   .chip-row{display:flex; gap:8px; flex-wrap:wrap;}
   .chip{font-family:'IBM Plex Mono',monospace; font-size:13px; padding:9px 15px; border-radius:8px; border:1px solid var(--border); background:var(--surface-alt); color:var(--muted); cursor:pointer;}
   .chip.active{border-color:var(--lime); color:var(--lime); background:rgba(43,140,126,.08);}
 
   /* NAV */
-  nav{position:sticky; top:0; z-index:20; background:rgba(10,11,15,.9); backdrop-filter:blur(10px); border-bottom:1px solid var(--border);}
+  nav{position:sticky; top:0; z-index:20; background:rgba(250,250,247,.9); backdrop-filter:blur(10px); border-bottom:1px solid var(--border);}
   nav .navwrap{max-width:760px; margin:0 auto; padding:0 18px; height:56px; display:flex; align-items:center; justify-content:space-between;}
   .logo{display:flex; align-items:center; gap:8px; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:18px;}
   .logo .dot{width:8px; height:8px; border-radius:50%; background:var(--lime);}
@@ -131,6 +133,13 @@
   .suite-links{display:flex; flex-wrap:wrap; gap:8px;}
   .suite-link{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); border:1px solid var(--border); background:var(--surface-alt); padding:7px 11px; border-radius:7px; text-decoration:none;}
   .suite-link.current{color:var(--lime); border-color:rgba(43,140,126,.35);}
+  .suite-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:16px 18px;}
+  .suite-col-label{font-family:'IBM Plex Mono',monospace; font-size:9.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-dim); margin-bottom:8px;}
+  .suite-col a{display:block; font-size:12px; color:var(--muted); text-decoration:none; margin-bottom:5px;}
+  .suite-col a.suite-primary{font-weight:700; color:var(--text); margin-bottom:6px;}
+  .suite-col a.current{color:var(--lime);}
+  .suite-meta{border-top:1px solid var(--border); padding-top:14px; margin-top:18px; display:flex; gap:8px; align-items:center; font-size:10.5px; color:var(--muted-dim); flex-wrap:wrap;}
+  .suite-meta a{color:var(--muted); text-decoration:none;}
   .nav-user{font-size:12px; color:var(--muted); font-family:'IBM Plex Mono',monospace; display:flex; align-items:center; gap:10px;}
 
   /* CARDS */
@@ -318,7 +327,7 @@ var PHASES = [
 var TYPE_COLORS = {
   Chest:{bg:'#1E3A5F',dot:'#60A5FA'}, Cardio:{bg:'#064E3B',dot:'#34D399'},
   Swim:{bg:'#0C4A6E',dot:'#38BDF8'}, HIIT:{bg:'#7F1D1D',dot:'#F87171'},
-  Recovery:{bg:'#1F2937',dot:'#9CA3AF'}, Rest:{bg:'#1C1917',dot:'#57534E'}
+  Recovery:{bg:'#1F2937',dot:'#9CA3AF'}, Rest:{bg:'#1C1917',dot:'#D8D3C8'}
 };
 var CYCLES = {
   fat:      ["Cardio","Chest","Swim","Recovery","Chest","Swim"],
@@ -340,7 +349,7 @@ function isRestSlot(weekdayIdx, freq){
   for(var k=0;k<restCount;k++){ if(Math.round(k*(7/restCount)) === weekdayIdx) return true; }
   return false;
 }
-function buildDetail(type, phaseId, volMod){
+function buildDetail(type, phaseId, volMod, sex){
   var sr = baseSetsReps(phaseId);
   var sets = Math.max(2, Math.round(sr.sets*volMod));
   var reps = sr.reps;
@@ -348,7 +357,10 @@ function buildDetail(type, phaseId, volMod){
   if(type==='Cardio') return 'Incline treadmill or bike, '+Math.round((15+phaseId*7)*volMod)+' min steady effort';
   if(type==='Swim') return 'Pool session, '+Math.round((20+phaseId*6)*volMod)+' min — mix steady laps and short intervals';
   if(type==='HIIT') return (6+phaseId)+' rounds: '+(30+phaseId*5)+'s max effort / '+Math.max(20,60-phaseId*5)+'s easy';
-  if(type==='Recovery') return 'Foam roll, stretch, and light core activation — 20 min';
+  if(type==='Recovery'){
+    if(sex==='female') return 'Foam roll, stretch, and light core activation — 20 min. Plus hip/glute activation work (banded lateral walks, clamshells, single-leg bridges) — commonly recommended in the injury-prevention literature to build knee stability.';
+    return 'Foam roll, stretch, and light core activation — 20 min';
+  }
   return 'Full rest — no session scheduled';
 }
 function generateDayMap(plan){
@@ -370,7 +382,7 @@ function generateDayMap(plan){
     var overrides = plan.day_overrides || {};
     var override = overrides[d];
     if(override){ type = override.type; note = override.note; }
-    map[d] = { type:type, label: type+' Day', detail: buildDetail(type, phase.id, plan.volume_modifier||1), phase: phase.id, note:note };
+    map[d] = { type:type, label: type+' Day', detail: buildDetail(type, phase.id, plan.volume_modifier||1, plan.sex), phase: phase.id, note:note };
   }
   return map;
 }
@@ -465,10 +477,10 @@ async function handleAuthSubmit(email, password){
     state.authError = e.message; state.busy=false; render();
   }
 }
-async function handleCreatePlan(goal, freq){
+async function handleCreatePlan(goal, freq, sex){
   state.busy = true; render();
   try{
-    var body = { user_id: state.session.user.id, goal:goal, days_per_week:freq, volume_modifier:1.0, day_overrides:{} };
+    var body = { user_id: state.session.user.id, goal:goal, days_per_week:freq, sex: sex||null, volume_modifier:1.0, day_overrides:{} };
     var rows = await db('/plans_cust', { method:'POST', body:JSON.stringify(body) });
     state.plan = rows[0];
     await db('/workout_progress_cust', { method:'POST', body:JSON.stringify({ user_id: state.session.user.id, completed_days:[] }) });
@@ -577,6 +589,13 @@ function renderOnboarding(){
     +   '<div class="chip active" data-freq="5">5</div>'
     +   '<div class="chip" data-freq="6">6</div>'
     + '</div>'
+    + '<div class="onb-label">BIOLOGICAL PROFILE <span style="color:var(--muted-dim); text-transform:none; font-weight:400;">(optional)</span></div>'
+    + '<div class="chip-row" id="sexChips">'
+    +   '<div class="chip" data-sex="female">Female</div>'
+    +   '<div class="chip" data-sex="male">Male</div>'
+    +   '<div class="chip active" data-sex="">Skip</div>'
+    + '</div>'
+    + '<div class="onb-hint">Used only to add default hip/glute stability work where the research supports it (e.g. ACL-injury-risk-informed programming). Not medical guidance — skip it and nothing changes.</div>'
     + '<button class="btn btn-primary btn-block" id="onbSubmit" style="margin-top:28px;" '+(state.busy?'disabled':'')+'>'+(state.busy?'Generating…':'Generate my plan')+'</button>'
     + '</div></div>';
 }
@@ -687,15 +706,33 @@ function renderAppBody(){
 
     + '<div class="app-footer" style="padding:0; margin:0;">'
     +   '<div class="app-footer-label">AricCivicLabs · Full Suite</div>'
-    +   '<div class="suite-links">'
-    +     '<a class="suite-link" href="https://aricciviclabs.org">AricCivicLabs.org</a>'
-    +     '<a class="suite-link" href="https://receipts.aricciviclabs.org">receipts.</a>'
-    +     '<a class="suite-link" href="https://transitions.aricciviclabs.org">Transitions</a>'
-    +     '<a class="suite-link" href="https://inable.aricciviclabs.org">InAble</a>'
-    +     '<a class="suite-link" href="https://meshforce.aricciviclabs.org">MeshForce</a>'
-    +     '<a class="suite-link" href="https://theseam.aricciviclabs.org">The Seam</a>'
-    +     '<a class="suite-link" href="https://civic.aricciviclabs.org/index.html">Rights Connector (Pillar 4)</a>'
-    +     '<a class="suite-link current" href="https://googoo.aricciviclabs.org/planforge-app.html">PlanForge (Pillar 5) — you are here</a>'
+    +   '<div class="suite-grid">'
+    +     '<div class="suite-col">'
+    +       '<div class="suite-col-label">💼 Work-Life</div>'
+    +       '<a class="suite-primary" href="https://receipts.aricciviclabs.org">receipts.</a>'
+    +       '<a class="suite-primary" href="https://transitions.aricciviclabs.org">Transitions</a>'
+    +     '</div>'
+    +     '<div class="suite-col">'
+    +       '<div class="suite-col-label">🧠 Social</div>'
+    +       '<a class="suite-primary" href="https://inable.aricciviclabs.org">InAble</a>'
+    +     '</div>'
+    +     '<div class="suite-col">'
+    +       '<div class="suite-col-label">⚙️ Workforce</div>'
+    +       '<a class="suite-primary" href="https://meshforce.aricciviclabs.org">MeshForce</a>'
+    +       '<a class="suite-primary" href="https://theseam.aricciviclabs.org">The Seam</a>'
+    +     '</div>'
+    +     '<div class="suite-col">'
+    +       '<div class="suite-col-label">🗽 Civic — Free</div>'
+    +       '<a class="suite-primary" href="https://civic.aricciviclabs.org/index.html">Rights Connector</a>'
+    +     '</div>'
+    +     '<div class="suite-col">'
+    +       '<div class="suite-col-label">🌱 Health &amp; Vitality</div>'
+    +       '<a class="suite-primary" href="https://googoo.aricciviclabs.org">goo-goo</a>'
+    +       '<a class="suite-primary current" href="https://googoo.aricciviclabs.org/planforge-app.html">PlanForge — you\'re here</a>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div class="suite-meta">'
+    +     '<a href="https://aricciviclabs.org">AricCivicLabs.Org</a><span>·</span><span>© 2026 AricCivicLabs.Org</span>'
     +   '</div>'
     + '</div>'
     + '</div>';
@@ -807,7 +844,18 @@ function wireEvents(){
         };
       })(freqChips[gi]);
     }
-    el('onbSubmit').onclick = function(){ handleCreatePlan(goal, freq); };
+    var sex = '';
+    var sexChips = document.querySelectorAll('#sexChips .chip');
+    for(gi=0; gi<sexChips.length; gi++){
+      (function(chip){
+        chip.onclick = function(){
+          var all = document.querySelectorAll('#sexChips .chip');
+          for(var x=0;x<all.length;x++){ all[x].classList.remove('active'); }
+          chip.classList.add('active'); sex = chip.dataset.sex;
+        };
+      })(sexChips[gi]);
+    }
+    el('onbSubmit').onclick = function(){ handleCreatePlan(goal, freq, sex); };
   }
   if(state.screen==='app'){
     el('signOutBtn').onclick = DEMO ? resetDemo : signOut;
