@@ -8,16 +8,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0A0B0F;
-    --surface:#14161C;
-    --surface-alt:#1B1E27;
-    --border:#262A33;
-    --lime:#D4FF3F;
-    --coral:#FF5B5B;
-    --sky:#5BC8FF;
-    --text:#F4F5F7;
-    --muted:#7B818F;
-    --muted-dim:#4B505C;
+    --bg:#FAFAF7;
+    --surface:#FFFFFF;
+    --surface-alt:#F2EDE4;
+    --border:#E0DDD8;
+    --lime:#2B8C7E;
+    --coral:#A8412F;
+    --sky:#3B7DD8;
+    --text:#1A1A1A;
+    --muted:#5B6270;
+    --muted-dim:#9CA3AF;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html{scroll-behavior:smooth;}
@@ -45,7 +45,7 @@
   .suite-links{display:flex; flex-wrap:wrap; gap:10px;}
   .suite-link{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); border:1px solid var(--border); background:var(--surface-alt); padding:8px 13px; border-radius:8px; text-decoration:none;}
   .suite-link:hover{color:var(--text); border-color:var(--muted);}
-  .suite-link.current{color:var(--lime); border-color:rgba(212,255,63,.35);}
+  .suite-link.current{color:var(--lime); border-color:rgba(43,140,126,.35);}
   .navlinks{display:flex; align-items:center; gap:28px; font-size:14px; color:var(--muted);}
   .navlinks a:hover{color:var(--text);}
   .btn{
@@ -54,7 +54,7 @@
     cursor:pointer; border:1px solid transparent; white-space:nowrap;
     transition:transform .15s ease, background .15s ease, border-color .15s ease;
   }
-  .btn-primary{background:var(--lime); color:#0A0B0F;}
+  .btn-primary{background:var(--lime); color:#fff;}
   .btn-primary:hover{transform:translateY(-1px);}
   .btn-ghost{border-color:var(--border); color:var(--text);}
   .btn-ghost:hover{border-color:var(--muted);}
@@ -65,7 +65,7 @@
   .eyebrow{
     display:inline-flex; align-items:center; gap:8px;
     font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.08em;
-    color:var(--lime); background:rgba(212,255,63,0.08); border:1px solid rgba(212,255,63,0.25);
+    color:var(--lime); background:rgba(43,140,126,0.08); border:1px solid rgba(43,140,126,0.25);
     padding:6px 12px; border-radius:999px; margin-bottom:22px;
   }
   h1{
@@ -96,7 +96,7 @@
     border:1px solid var(--border); color:var(--muted); cursor:pointer; background:var(--surface-alt);
     transition:all .15s ease;
   }
-  .chip.active{border-color:var(--lime); color:var(--lime); background:rgba(212,255,63,0.08);}
+  .chip.active{border-color:var(--lime); color:var(--lime); background:rgba(43,140,126,0.08);}
   .gen-label{font-size:11px; color:var(--muted-dim); margin:14px 0 8px; font-family:'IBM Plex Mono',monospace; letter-spacing:0.06em;}
 
   .cal{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:12px;}
@@ -173,7 +173,7 @@
   /* PRICING */
   .pricing-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
   .plan{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px;}
-  .plan.featured{border-color:var(--lime); background:linear-gradient(180deg,rgba(212,255,63,0.06),transparent 40%),var(--surface);}
+  .plan.featured{border-color:var(--lime); background:linear-gradient(180deg,rgba(43,140,126,0.06),transparent 40%),var(--surface);}
   .plan-tag{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em;}
   .plan-price{font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:40px; margin:10px 0 4px;}
   .plan-price span{font-size:14px; color:var(--muted); font-family:'Inter',sans-serif; font-weight:500;}
@@ -200,7 +200,7 @@
     background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:14px 16px;
     display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px; color:var(--muted);
   }
-  .verdict-tag{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; letter-spacing:0.06em; padding:5px 10px; border-radius:6px; background:rgba(212,255,63,0.12); color:var(--lime); flex-shrink:0;}
+  .verdict-tag{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; letter-spacing:0.06em; padding:5px 10px; border-radius:6px; background:rgba(43,140,126,0.12); color:var(--lime); flex-shrink:0;}
 
   .adaptive-compare{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
   .adaptive-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px;}
@@ -231,7 +231,7 @@
   .flow-strip{display:flex; align-items:center; justify-content:center; gap:12px; margin-top:32px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); flex-wrap:wrap;}
   .flow-node{background:var(--surface-alt); border:1px solid var(--border); padding:8px 14px; border-radius:999px;}
   .flow-arrow{color:var(--muted-dim);}
-  .sync-badge{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--sky); border:1px solid rgba(91,200,255,0.3); background:rgba(91,200,255,0.08); padding:3px 8px; border-radius:999px; margin-left:8px;}
+  .sync-badge{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--sky); border:1px solid rgba(92,158,232,0.3); background:rgba(92,158,232,0.08); padding:3px 8px; border-radius:999px; margin-left:8px;}
 
   /* CTA FOOTER */
   .cta-final{padding:90px 0; text-align:center;}
@@ -350,7 +350,7 @@
     </div>
     <div class="pillars">
       <div class="pillar">
-        <div class="pillar-icon" style="background:rgba(212,255,63,0.12); color:var(--lime);">◆</div>
+        <div class="pillar-icon" style="background:rgba(43,140,126,0.12); color:var(--lime);">◆</div>
         <h4>Generated, not authored</h4>
         <p>A short intake (goal, equipment, days/week, injuries) replaces the hardcoded day map with a produced one — same day-card format, different content per person.</p>
         <ul>
@@ -360,7 +360,7 @@
         </ul>
       </div>
       <div class="pillar">
-        <div class="pillar-icon" style="background:rgba(91,200,255,0.12); color:var(--sky);">◆</div>
+        <div class="pillar-icon" style="background:rgba(92,158,232,0.12); color:var(--sky);">◆</div>
         <h4>An account, not a UUID</h4>
         <p>Email or social sign-in replaces the anonymous localStorage ID. The Supabase table already keyed by user_id needs almost no schema change to become multi-tenant.</p>
         <ul>
@@ -370,7 +370,7 @@
         </ul>
       </div>
       <div class="pillar">
-        <div class="pillar-icon" style="background:rgba(255,91,91,0.12); color:var(--coral);">◆</div>
+        <div class="pillar-icon" style="background:rgba(168,65,47,0.12); color:var(--coral);">◆</div>
         <h4>Progress with memory</h4>
         <p>Completed days already exist as data — accounts make them worth looking at: streaks, phase trends, and a record that outlives any single 100-day run.</p>
         <ul>
@@ -675,15 +675,15 @@
     function verdict(s, e, h){
       const completion = s/7;
       if(completion < 0.6 && h > 2){
-        return {t:"PULL BACK", d:`Only ${s}/7 sessions logged and resting HR reported up ${h}bpm — reads as early overreach. Next week's volume drops ~20% and a recovery day replaces the hardest session.`, c:"var(--coral)", bg:"rgba(255,91,91,0.12)"};
+        return {t:"PULL BACK", d:`Only ${s}/7 sessions logged and resting HR reported up ${h}bpm — reads as early overreach. Next week's volume drops ~20% and a recovery day replaces the hardest session.`, c:"var(--coral)", bg:"rgba(168,65,47,0.12)"};
       }
       if(completion < 0.6){
-        return {t:"REBUILD", d:`Only ${s}/7 sessions logged, but resting HR is steady — reads as a scheduling problem, not overreach. Next week repeats this week's targets instead of progressing.`, c:"var(--sky)", bg:"rgba(91,200,255,0.12)"};
+        return {t:"REBUILD", d:`Only ${s}/7 sessions logged, but resting HR is steady — reads as a scheduling problem, not overreach. Next week repeats this week's targets instead of progressing.`, c:"var(--sky)", bg:"rgba(92,158,232,0.12)"};
       }
       if(completion >= 0.85 && h <= 0 && e <= 3){
-        return {t:"PROGRESS", d:`${s}/7 sessions, resting HR flat or down, effort reported low — next week adds load or a rep to the chest and cardio sessions.`, c:"var(--lime)", bg:"rgba(212,255,63,0.12)"};
+        return {t:"PROGRESS", d:`${s}/7 sessions, resting HR flat or down, effort reported low — next week adds load or a rep to the chest and cardio sessions.`, c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
       }
-      return {t:"HOLD STEADY", d:"Numbers are in range — next week repeats this week's plan as written.", c:"var(--lime)", bg:"rgba(212,255,63,0.12)"};
+      return {t:"HOLD STEADY", d:"Numbers are in range — next week repeats this week's plan as written.", c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
     }
 
     function update(){
@@ -724,7 +724,7 @@
         const gl = document.createElementNS("http://www.w3.org/2000/svg","line");
         gl.setAttribute("x1",pad); gl.setAttribute("x2",w-pad);
         gl.setAttribute("y1",y); gl.setAttribute("y2",y);
-        gl.setAttribute("stroke","#20232C"); gl.setAttribute("stroke-width","1");
+        gl.setAttribute("stroke","#E5E1D8"); gl.setAttribute("stroke-width","1");
         svg.appendChild(gl);
       }
       Object.entries(metrics).forEach(([key,m]) => {
@@ -750,7 +750,7 @@
           const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
           c.setAttribute("cx",p[0]); c.setAttribute("cy",p[1]);
           c.setAttribute("r", isAdapt ? 5.5 : 2.5);
-          c.setAttribute("fill", isAdapt ? "#0A0B0F" : m.color);
+          c.setAttribute("fill", isAdapt ? "#FAFAF7" : m.color);
           c.setAttribute("stroke", m.color);
           c.setAttribute("stroke-width", isAdapt ? 2 : 0);
           const title = document.createElementNS("http://www.w3.org/2000/svg","title");
@@ -785,7 +785,7 @@
     const c = colors[t];
     const el = document.createElement('div');
     el.className = 'dg';
-    el.style.background = done ? c.dot : "#1B1E27";
+    el.style.background = done ? c.dot : "#F2EDE4";
     el.style.opacity = done ? 0.9 : 1;
     dashGrid.appendChild(el);
   }
