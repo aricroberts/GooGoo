@@ -489,11 +489,38 @@ async function boot(){
   await loadUserData();
   await resumePendingActionIfAny();
 }
+/* ═══════════════════════════ GOO-GOO MEAL HINT (same-origin localStorage) ═══════════════════════════
+   Writes which real calendar weekdays have a scheduled workout, so s1e1
+   can nudge those dinners with a note. Day 1 of a plan isn't inherently
+   "Monday" — it's anchored to whatever weekday the plan was actually
+   created on, via created_at, so this has to be computed, not assumed. */
+function writeMealHint(plan){
+  if(!plan || !plan.created_at) return;
+  var JS_DOW_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var startDow = new Date(plan.created_at).getDay(); // 0=Sun..6=Sat, the weekday Day 1 actually fell on
+  var trainingDays = [];
+  for(var i=0;i<7;i++){
+    if(!isRestSlot(i, plan.days_per_week)){
+      trainingDays.push(JS_DOW_LABELS[(startDow+i)%7]);
+    }
+  }
+  try{
+    localStorage.setItem('pf_meal_hint', JSON.stringify({
+      trainingDays: trainingDays,
+      daysPerWeek: plan.days_per_week,
+      goal: plan.goal,
+      source: 'PlanForge',
+      updated: new Date().toISOString()
+    }));
+  }catch(e){ console.error('Could not write meal hint', e); }
+}
+
 async function loadUserData(){
   try{
     var plans = await db('/plans_cust?select=*&limit=1');
     if(!plans || plans.length===0){ state.screen='onboarding'; render(); return; }
     state.plan = plans[0];
+    writeMealHint(state.plan);
     var progressRows = await db('/workout_progress_cust?select=*&limit=1');
     state.progress = (progressRows && progressRows[0]) || { completed_days: [] };
     var checkins = await db('/checkins_cust?select=*&order=week_number.asc');
@@ -541,6 +568,7 @@ async function handleCreatePlan(goal, freq, sex, skipGate){
       await db('/workout_progress_cust', { method:'POST', body:JSON.stringify({ user_id: state.session.user.id, completed_days:[] }) });
     }
     state.plan = rows[0];
+    writeMealHint(state.plan);
     state.progress = { completed_days: [] };
     state.busy=false; state.screen='app'; render();
   } catch(e){
@@ -773,6 +801,7 @@ function renderAppBody(){
     + '</div>'
 
     + '<div class="app-footer" style="padding:0; margin:0;">'
+    +   '<div class="onb-hint" style="margin:0 0 16px;">🔗 Your training weekdays (not your workout content) are saved to this browser so goo-goo (S1E1) can nudge training-day dinners — local only, nothing sent to a server.</div>'
     +   '<div class="app-footer-label">AricCivicLabs · Full Suite</div>'
     +   '<div class="suite-grid">'
     +     '<div class="suite-col">'

@@ -129,6 +129,12 @@
   .privacy-banner i{color:var(--brick); font-size:16px; margin-top:1px; flex-shrink:0;}
   .note-block{background:var(--p5-bg); border:1px solid var(--p5-bd); border-radius:10px; padding:12px 16px; margin-top:16px; font-size:12.5px; color:var(--ink2); line-height:1.6;}
   .avoid-banner{display:none; gap:10px; align-items:flex-start; background:rgba(168,65,47,.08); border:1px solid rgba(168,65,47,.28); border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:12.5px; color:var(--ink2); line-height:1.6;}
+  .pf-banner{display:none; gap:10px; align-items:flex-start; background:var(--p5-bg); border:1px solid var(--p5-bd); border-radius:10px; padding:14px 16px; margin-bottom:18px; font-size:13px; color:var(--ink2); line-height:1.65;}
+  .pf-banner i{color:var(--p5); font-size:16px; margin-top:1px; flex-shrink:0;}
+  .pf-banner strong{color:var(--ink);}
+  .pf-field{display:flex; align-items:flex-start; gap:8px; margin-top:10px; cursor:pointer;}
+  .pf-field input{margin-top:3px;}
+  .pf-field span{font-size:12.5px; color:var(--ink2);}
   .avoid-banner i{color:var(--brick); font-size:15px; margin-top:1px; flex-shrink:0;}
   .copy-feedback{font-size:11.5px; color:var(--cook); font-weight:600; margin-left:6px;}
 
@@ -152,6 +158,7 @@
   <span class="acl-eco-div"></span>
   <div class="acl-eco-links">
     <a href="/">Project: goo-goo overview</a>
+    <a href="https://googoo.aricciviclabs.org/planforge-app.html">PlanForge (S1E2)</a>
     <a href="https://civic.aricciviclabs.org/">Civic &amp; Rights</a>
     <span class="acl-eco-here">S1E1 · The Growl</span>
   </div>
@@ -175,6 +182,11 @@
 
   <div class="section-label">Tell it about your week</div>
   <p class="section-sub">Everything below runs in your browser. Closing this tab clears it — nothing is stored.</p>
+
+  <div class="pf-banner" id="pfBanner">
+    <i class="ti ti-barbell"></i>
+    <div id="pfBannerText"></div>
+  </div>
 
   <div class="card">
     <div class="field-grid">
@@ -236,6 +248,10 @@
           <div class="daychip" data-day="Sat">Sat</div>
           <div class="daychip" data-day="Sun">Sun</div>
         </div>
+        <label class="pf-field" id="pfExtraFuelField" style="display:none;">
+          <input type="checkbox" id="pfExtraFuel" checked>
+          <span>Flag a training-day note on dinner for the days detected from PlanForge above (extra portion reminder — doesn't change what's cooked or ordered).</span>
+        </label>
       </div>
 
       <div class="field field-full">
@@ -359,9 +375,10 @@
         <a href="https://civic.aricciviclabs.org/">Civic &amp; Rights Index</a>
       </div>
       <div class="acl-suite-col">
-        <div class="acl-suite-label">Physical &amp; Metabolic · Proposed</div>
+        <div class="acl-suite-label">🌱 Health &amp; Vitality</div>
         <a href="/">Project: goo-goo overview</a>
         <span class="acl-suite-here">S1E1 · The Growl (this tool)</span>
+        <a href="https://googoo.aricciviclabs.org/planforge-app.html">PlanForge (S1E2)</a>
       </div>
     </div>
     <div class="acl-suite-meta">
@@ -401,6 +418,28 @@ var DIP_TIMES = {
 };
 var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 var JS_WEEKDAY = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:0 };
+
+// ---------- PlanForge (S1E2) meal hint — same-origin localStorage, read-only here ----------
+var PF_HINT = null;
+try{
+  var pfRaw = localStorage.getItem('pf_meal_hint');
+  if (pfRaw) PF_HINT = JSON.parse(pfRaw);
+}catch(e){ PF_HINT = null; }
+
+function initPfBanner(){
+  if (!PF_HINT || !PF_HINT.trainingDays || !PF_HINT.trainingDays.length) return;
+  var banner = document.getElementById('pfBanner');
+  var text = document.getElementById('pfBannerText');
+  var goalLabel = { fat:'fat loss', strength:'strength', mobility:'mobility' }[PF_HINT.goal] || PF_HINT.goal;
+  text.innerHTML = '<strong>Detected a PlanForge plan</strong> in this browser — '
+    + PF_HINT.trainingDays.length + ' training day(s) (' + goalLabel + '): ' + PF_HINT.trainingDays.join(', ') + '. '
+    + 'This is a local browser hint only, from Season 1 Episode 2 — nothing was sent to a server, and it only adds a dinner note below if you leave the checkbox on.';
+  banner.style.display = 'flex';
+  var field = document.getElementById('pfExtraFuelField');
+  if (field) field.style.display = 'flex';
+}
+document.addEventListener('DOMContentLoaded', initPfBanner);
+if (document.readyState !== 'loading') initPfBanner();
 
 // ---------- schedule logic ----------
 function buildBaseMeals(input){
@@ -463,13 +502,19 @@ function applyDipFueling(meals, selectedDips, useSnacks){
 
 function buildWeek(input){
   var baseMeals = applyDipFueling(buildBaseMeals(input), input.dips, input.useSnacks);
+  var lastMealKey = baseMeals.length ? baseMeals[baseMeals.length-1].key : null;
   return DAYS.map(function(day){
     var isBusy = input.busyDays.indexOf(day) !== -1;
+    var isTrainingDay = input.pfExtraFuel && input.pfTrainingDays.indexOf(day) !== -1;
     var slots = baseMeals.map(function(m){
       var mode = (input.defaults && input.defaults[m.key]) || 'flexible';
       if (mode === 'flexible') mode = isBusy ? 'order' : 'cook';
       if (isBusy && mode === 'cook') mode = 'order';
-      return Object.assign({}, m, { mode: mode, time: formatTime(m.mins) });
+      var note = m.note || null;
+      if (isTrainingDay && m.key === lastMealKey){
+        note = note ? note + ' · training day (PlanForge) — extra portion' : 'Training day (PlanForge) — consider an extra portion';
+      }
+      return Object.assign({}, m, { mode: mode, time: formatTime(m.mins), note: note });
     });
     return { day: day, isBusy: isBusy, slots: slots };
   });
@@ -711,7 +756,9 @@ function collectInput(){
     dietStyle: document.getElementById('dietStyle').value,
     avoidChips: avoidChips,
     avoidOther: avoidOther,
-    householdSize: parseInt(document.getElementById('householdSize').value,10) || 1
+    householdSize: parseInt(document.getElementById('householdSize').value,10) || 1,
+    pfTrainingDays: (PF_HINT && PF_HINT.trainingDays) || [],
+    pfExtraFuel: !!(document.getElementById('pfExtraFuel') && document.getElementById('pfExtraFuel').checked)
   };
 }
 
