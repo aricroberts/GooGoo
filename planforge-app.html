@@ -169,6 +169,11 @@
 
   /* CHECK-IN */
   .checkin-due{background:rgba(43,140,126,.06); border-color:rgba(43,140,126,.3);}
+  .lifestyle-grid{display:flex; flex-direction:column; gap:10px; margin-bottom:10px;}
+  .lifestyle-tip{display:flex; gap:12px; align-items:flex-start; background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .lt-icon{font-size:19px; flex-shrink:0; line-height:1.4;}
+  .lt-label{font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--lime); margin-bottom:4px;}
+  .lifestyle-tip p{font-size:13px; color:var(--muted); line-height:1.55; margin:0;}
   .checkin-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; margin:16px 0;}
   .ci-field{display:flex; flex-direction:column; gap:8px;}
   .ci-label{font-size:12.5px; color:var(--muted); display:flex; gap:6px; flex-wrap:wrap;}
@@ -468,6 +473,62 @@ function checkinVerdict(sessions, effort, hrDelta){
     volMult:1.0, swapHardestDay:false
   };
 }
+/* ═══════════════════════════ LIFESTYLE TIPS ═══════════════════════════
+   General, non-personalized guidance — not medical or nutrition advice.
+   Driven by the same signals the adaptive engine already has: the most
+   recent check-in verdict, the current phase, and the goal. Recomputed
+   on every render, so it moves automatically as check-ins/phase change —
+   nothing new stored, nothing new asked of the user. */
+var DIET_BASELINE_BY_GOAL = {
+  fat: 'Protein and fiber first at each meal tends to help with fat-loss adherence — fill half the plate with vegetables before the rest.',
+  strength: 'Strength gains need enough fuel — a deficit blunts them. Aim for maintenance or a slight surplus, with protein roughly 0.7–1g per lb of bodyweight.',
+  mobility: 'Nothing exotic needed here — consistent, regular meals support the recovery this kind of training relies on.'
+};
+var DIET_BY_VERDICT = {
+  'PULL BACK': 'This is a recovery week, not a restriction week — prioritize protein and carbohydrate around training rather than cutting back.',
+  'REBUILD': 'Missed sessions often trace back to under-fueling earlier in the day — check you\'re eating enough before training, not just after.',
+  'PROGRESS': 'Things are clicking — a good phase to dial in consistency rather than perfection: roughly the same meal times, most days.'
+};
+var SLEEP_BY_VERDICT = {
+  'PULL BACK': 'A rising resting heart rate alongside missed sessions often reads as sleep debt more than a motivation problem — one or two earlier nights can matter more than the workout itself this week.',
+  'REBUILD': 'A consistent wake time, even on rest days, tends to make morning sessions easier to actually show up for.',
+  'PROGRESS': 'Adaptation happens during sleep, not just during training — protect the 7+ hours while things are working.'
+};
+var SLEEP_BASELINE_BY_PHASE = {
+  1: 'No need to overhaul anything yet — just notice your current sleep pattern before this plan starts changing it.',
+  2: 'As training volume builds, sleep tends to matter more, not less — worth keeping an eye on here.',
+  3: 'This is usually where sleep debt catches up with people — intensity is up, recovery windows matter.',
+  4: 'You\'re close to the finish — don\'t trade sleep for a bit of extra effort this late.'
+};
+var PSYCH_BY_VERDICT = {
+  'PULL BACK': 'A dip isn\'t a failure — the plan already adjusted for you. This week, aim for "showed up" over "crushed it."',
+  'REBUILD': 'Low completion without physical strain usually means the schedule doesn\'t fit yet, not that willpower is the problem — worth naming which specific day keeps getting missed.',
+  'PROGRESS': 'This is the phase where habits actually cement — notice what made this stretch work so you can repeat it on purpose, not by accident.'
+};
+var PSYCH_BASELINE_BY_PHASE = {
+  1: 'Right now, showing up matters more than the workout content — consistency is the whole game in phase one.',
+  2: 'The novelty\'s worn off by now — this is where the habit either sticks or doesn\'t. Both outcomes are data, not a verdict on you.',
+  3: 'Motivation naturally dips mid-plan — that\'s normal, not a sign something\'s wrong.',
+  4: 'You\'re close to 100 days — start deciding now what continuing looks like after this plan ends, so momentum doesn\'t just stop at the finish line.'
+};
+function getLifestyleTips(plan, checkins, completedCount){
+  var phase = phaseForDay(Math.max(1, completedCount+1)).id;
+  var latest = (checkins && checkins.length) ? checkins[checkins.length-1] : null;
+  var verdict = latest ? latest.verdict : null;
+
+  var diet = (verdict && DIET_BY_VERDICT[verdict]) || DIET_BASELINE_BY_GOAL[plan.goal] || DIET_BASELINE_BY_GOAL.fat;
+  if(!verdict && phase>=4) diet += ' This late in a plan, appetite and needs often shift — worth reassessing rather than assuming week-one portions still fit.';
+
+  var sleep = (verdict && SLEEP_BY_VERDICT[verdict]) || SLEEP_BASELINE_BY_PHASE[phase] || SLEEP_BASELINE_BY_PHASE[1];
+  var psych = (verdict && PSYCH_BY_VERDICT[verdict]) || PSYCH_BASELINE_BY_PHASE[phase] || PSYCH_BASELINE_BY_PHASE[1];
+
+  return [
+    { icon:'🥗', label:'Diet', text:diet },
+    { icon:'😴', label:'Sleep', text:sleep },
+    { icon:'🧠', label:'Psychology', text:psych }
+  ];
+}
+
 function applyAdaptation(plan, currentDay, verdict){
   var newMod = Math.max(0.6, Math.min(1.4, (plan.volume_modifier||1) * verdict.volMult));
   var overrides = assign({}, plan.day_overrides||{});
@@ -745,6 +806,7 @@ function renderAppBody(){
   var i;
   for(i=0;i<completedArr.length;i++){ completedSet[completedArr[i]] = true; }
   var completedCount = completedArr.length;
+  var lifestyleTips = getLifestyleTips(state.plan, state.checkins, completedCount);
   var pct = Math.round(completedCount/100*100);
   var lastCompleted = 0;
   for(i=0;i<completedArr.length;i++){ if(completedArr[i] > lastCompleted) lastCompleted = completedArr[i]; }
@@ -809,6 +871,16 @@ function renderAppBody(){
     +   '<div class="verdict-box" id="verdictBox"></div>'
     +   '<button class="btn btn-primary btn-block" id="ciSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy?'Updating plan…':'Submit check-in & update plan')+'</button>'
     +   (state.checkins.length ? '<div class="last-checkin">Last check-in: week '+state.checkins[state.checkins.length-1].week_number+' → '+state.checkins[state.checkins.length-1].verdict+'</div>' : '')
+    + '</div>'
+
+    + '<div class="card">'
+    +   '<div class="card-title" style="margin-bottom:12px;">LIFESTYLE — MOVES WITH YOUR PROGRESS</div>'
+    +   '<div class="lifestyle-grid">'
+    +     lifestyleTips.map(function(t){
+            return '<div class="lifestyle-tip"><span class="lt-icon">'+t.icon+'</span><div><div class="lt-label">'+t.label+'</div><p>'+t.text+'</p></div></div>';
+          }).join('')
+    +   '</div>'
+    +   '<div class="onb-hint">General guidance, not medical or nutrition advice — check with a professional for anything personalized to you.</div>'
     + '</div>'
 
     + '<div class="card">'
