@@ -115,8 +115,9 @@
 
   input[type=email], input[type=password], input[type=number], input[type=text]{
     background:var(--surface-alt); border:1px solid var(--border); border-radius:8px;
-    padding:11px 13px; color:var(--text); font-size:14px; width:100%;
+    padding:11px 13px; color:var(--text); font-size:16px; width:100%;
   }
+  textarea{ font-size:16px; }
   input:focus, .chip:focus-visible, button:focus-visible{outline:2px solid var(--lime); outline-offset:2px;}
 
   /* AUTH SCREEN */
@@ -898,8 +899,8 @@ function renderAuth(){
     + '<div class="auth-sub">' + (isUp ? 'Create your free account — your first 100-day plan is on us.' : 'Sign in to pick up where you left off.') + '</div>'
     + (!isUp ? '<div class="onb-hint" style="margin-bottom:16px;">New here? Don\'t have an account yet — <a id="authSwitchToSignup" style="color:var(--lime); font-weight:700; cursor:pointer;">sign up</a>, it\'s free, and your first 100-day plan is too.</div>' : '')
     + (state.authError ? '<div class="auth-error">'+state.authError+'</div>' : '')
-    + '<div class="field"><label>Email</label><input type="email" id="authEmail" placeholder="you@example.com" /></div>'
-    + '<div class="field"><label>Password</label><input type="password" id="authPassword" placeholder="At least 6 characters" /></div>'
+    + '<div class="field"><label>Email</label><input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" /></div>'
+    + '<div class="field"><label>Password</label><input type="password" id="authPassword" placeholder="At least 6 characters" autocomplete="current-password" /></div>'
     + '<button class="btn btn-primary btn-block" id="authSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy ? 'Working…' : (isUp ? 'Create free account' : 'Sign in'))+'</button>'
     + '<div class="auth-toggle">' + (isUp ? 'Already have an account?' : "Don't have an account?") + ' <a id="authToggle">' + (isUp ? 'Sign in' : 'Create one — free') + '</a></div>'
     + '</div></div>';
@@ -1032,7 +1033,7 @@ function renderAppBody(){
     +     '<div class="ci-field"><div class="ci-label">Waist this week (in)</div><input type="number" step="0.1" placeholder="optional" value="'+state.ciWaist+'" id="inWaist" /></div>'
     +     '<div class="ci-field"><div class="ci-label">Weight this week</div><input type="number" step="0.1" placeholder="optional" value="'+state.ciWeight+'" id="inWeight" /></div>'
     +   '</div>'
-    +   '<div class="ci-field" style="margin-bottom:14px;"><div class="ci-label">Notes <span style="color:var(--muted-dim);">(optional, just for you — never shared)</span></div><textarea id="inNotes" placeholder="Anything worth remembering about this week..." rows="2" style="width:100%; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-family:inherit; font-size:13px; resize:vertical;">'+state.ciNotes+'</textarea></div>'
+    +   '<div class="ci-field" style="margin-bottom:14px;"><div class="ci-label">Notes <span style="color:var(--muted-dim);">(optional, just for you — never shared)</span></div><textarea id="inNotes" placeholder="Anything worth remembering about this week..." rows="2" style="width:100%; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-family:inherit; font-size:16px; resize:vertical;">'+state.ciNotes+'</textarea></div>'
     +   '<div class="verdict-box" id="verdictBox"></div>'
     +   '<button class="btn btn-primary btn-block" id="ciSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy?'Updating plan…':'Submit check-in & update plan')+'</button>'
     +   (state.checkins.length ? '<div class="last-checkin">Last check-in: week '+state.checkins[state.checkins.length-1].week_number+' → '+state.checkins[state.checkins.length-1].verdict+(state.checkins[state.checkins.length-1].notes ? ' · "'+state.checkins[state.checkins.length-1].notes+'"' : '')+'</div>' : '')
