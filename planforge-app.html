@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#FAFAF7">
 <title>PlanForge — AricCivicLabs Pillar 5 · Health &amp; Vitality</title>
@@ -484,53 +485,78 @@ function generateDayMap(plan){
 }
 
 /* ═══════════════════════════ ADAPTIVE ENGINE ═══════════════════════════ */
+function attendanceClause(sessions, daysPerWeek){
+  var completion = sessions/daysPerWeek;
+  if(sessions === 0) return 'Zero sessions logged this week';
+  if(completion >= 0.999) return 'Every session happened this week — '+sessions+'/'+daysPerWeek;
+  if(completion >= 0.85) return sessions+'/'+daysPerWeek+' sessions — just about everything got done';
+  if(completion >= 0.6) return sessions+'/'+daysPerWeek+' sessions, a solid majority of the week';
+  if(completion >= 0.4) return sessions+'/'+daysPerWeek+' sessions — a bit under half the week';
+  return sessions+'/'+daysPerWeek+' sessions — most of the week did not happen';
+}
+function effortClause(effort){
+  if(effort<=1) return 'effort barely registered at 1/5';
+  if(effort===2) return 'effort stayed low at 2/5';
+  if(effort===3) return 'effort sat in the middle at 3/5';
+  if(effort===4) return 'effort ran high at 4/5';
+  return 'effort maxed out at 5/5';
+}
+function hrClause(hrDelta){
+  if(hrDelta<=-3) return 'resting heart rate dropped a real '+Math.abs(hrDelta)+'bpm';
+  if(hrDelta<=-1) return 'resting heart rate eased down '+Math.abs(hrDelta)+'bpm';
+  if(hrDelta===0) return 'resting heart rate held flat';
+  if(hrDelta<=2) return 'resting heart rate crept up '+hrDelta+'bpm';
+  if(hrDelta<=4) return 'resting heart rate climbed a noticeable '+hrDelta+'bpm';
+  return 'resting heart rate jumped '+hrDelta+'bpm';
+}
+function composeDetail(sessions, effort, hrDelta, daysPerWeek, closing){
+  return attendanceClause(sessions, daysPerWeek)+', '+effortClause(effort)+', and '+hrClause(hrDelta)+'. '+closing;
+}
 function checkinVerdict(sessions, effort, hrDelta, daysPerWeek){
   daysPerWeek = daysPerWeek || 7;
   var completion = sessions/daysPerWeek;
-  var hrUp = hrDelta > 0;
-  var hrPhrase = hrDelta === 0 ? 'flat' : (hrUp ? 'up '+hrDelta+'bpm' : 'down '+Math.abs(hrDelta)+'bpm');
 
   if(completion < 0.5 && hrDelta >= 4) return {
     tag:'OVERREACH', color:'var(--coral)', bg:'rgba(168,65,47,.14)',
-    detail: sessions+'/'+daysPerWeek+' sessions and resting HR '+hrPhrase+' together is the specific combination that means overreach, not a rough week. Volume drops meaningfully and the toughest session on the calendar becomes a recovery day.',
+    detail: composeDetail(sessions, effort, hrDelta, daysPerWeek, 'That specific combination reads as overreach, not a rough week — volume drops meaningfully and the toughest session on the calendar becomes a recovery day.'),
     volMult:0.75, swapHardestDay:true
   };
   if(completion < 0.6 && hrDelta > 1) return {
     tag:'PULL BACK', color:'var(--coral)', bg:'rgba(168,65,47,.12)',
-    detail: sessions+'/'+daysPerWeek+' sessions with resting HR '+hrPhrase+' — recovery is falling behind the training, even if it does not look dramatic yet. Volume steps down and the hardest day swaps to recovery before this compounds.',
+    detail: composeDetail(sessions, effort, hrDelta, daysPerWeek, 'Recovery is falling behind the training, even if it does not look dramatic yet — volume steps down and the hardest day swaps to recovery before this compounds.'),
     volMult:0.85, swapHardestDay:true
   };
   if(completion < 0.6){
     return {
       tag:'REBUILD', color:'var(--sky)', bg:'rgba(92,158,232,.12)',
-      detail: sessions+'/'+daysPerWeek+' sessions, but resting HR '+hrPhrase+' says your body had nothing to do with the miss — this reads as a calendar problem. Next week repeats the same targets instead of adding more on top of a plan that is not fitting the week yet.',
+      detail: composeDetail(sessions, effort, hrDelta, daysPerWeek, 'Your body had nothing to do with the miss here — this reads as a calendar problem. Next week repeats the same targets instead of adding more on top of a plan that is not fitting the week yet.'),
       volMult:1.0, swapHardestDay:false
     };
   }
   if(completion >= 0.7 && effort >= 4 && hrDelta >= 1){
     return {
       tag:'GRINDING', color:'var(--sky)', bg:'rgba(92,158,232,.12)',
-      detail: sessions+'/'+daysPerWeek+' sessions at effort '+effort+'/5, resting HR '+hrPhrase+' — you are getting everything done, but it is taking a visible toll. Volume holds flat this week rather than adding to it.',
+      detail: composeDetail(sessions, effort, hrDelta, daysPerWeek, 'Everything is getting done, but it is visibly costing something. Volume holds flat this week rather than adding to it.'),
       volMult:1.0, swapHardestDay:false
     };
   }
   if(completion >= 0.85 && hrDelta <= -1 && effort <= 2){
     return {
       tag:'BREAKTHROUGH', color:'var(--lime)', bg:'rgba(43,140,126,.16)',
-      detail: sessions+'/'+daysPerWeek+' sessions, resting HR '+hrPhrase+', effort barely registering at '+effort+'/5 — that specific combination is your fitness improving in real time, not luck. Next week adds real load while it is working.',
+      detail: composeDetail(sessions, effort, hrDelta, daysPerWeek, 'That combination is real fitness improvement, not luck. Next week adds real load while it is working.'),
       volMult:1.15, swapHardestDay:false
     };
   }
   if(completion >= 0.85 && hrDelta<=0 && effort<=3){
     return {
       tag:'PROGRESS', color:'var(--lime)', bg:'rgba(43,140,126,.12)',
-      detail: sessions+'/'+daysPerWeek+' sessions, resting HR '+hrPhrase+', effort at a manageable '+effort+'/5 — the plan is landing well at its current level. Next week adds a bit more.',
+      detail: composeDetail(sessions, effort, hrDelta, daysPerWeek, 'The plan is landing well at its current level. Next week adds a bit more.'),
       volMult:1.1, swapHardestDay:false
     };
   }
   return {
     tag:'HOLD STEADY', color:'var(--lime)', bg:'rgba(43,140,126,.12)',
-    detail: sessions+'/'+daysPerWeek+' sessions, effort '+effort+'/5, resting HR '+hrPhrase+' — nothing here calls for a change in either direction. Next week repeats this week\'s plan as written.',
+    detail: composeDetail(sessions, effort, hrDelta, daysPerWeek, 'Nothing here calls for a change in either direction. Next week repeats this week\'s plan as written.'),
     volMult:1.0, swapHardestDay:false
   };
 }

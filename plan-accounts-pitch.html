@@ -421,8 +421,8 @@
       </div>
       <div class="checkin-grid">
         <div class="checkin-field">
-          <div class="checkin-label">Sessions completed this week <b id="valSessions">5</b> / 7</div>
-          <input type="range" min="0" max="7" value="5" id="inSessions" class="slider">
+          <div class="checkin-label">Sessions completed this week <b id="valSessions">4</b> / 5 (illustrative goal)</div>
+          <input type="range" min="0" max="5" value="4" id="inSessions" class="slider">
         </div>
         <div class="checkin-field">
           <div class="checkin-label">Perceived effort <b id="valEffort">3</b> / 5 <span class="checkin-hint">(1 easy — 5 maxed out)</span></div>
@@ -707,28 +707,55 @@
     const tag = document.getElementById('verdictTag');
     const detail = document.getElementById('verdictDetail');
 
+    function attendanceClause(s, dpw){
+      const completion = s/dpw;
+      if(s === 0) return "Zero sessions logged this week";
+      if(completion >= 0.999) return `Every session happened this week — ${s}/${dpw}`;
+      if(completion >= 0.85) return `${s}/${dpw} sessions — just about everything got done`;
+      if(completion >= 0.6) return `${s}/${dpw} sessions, a solid majority of the week`;
+      if(completion >= 0.4) return `${s}/${dpw} sessions — a bit under half the week`;
+      return `${s}/${dpw} sessions — most of the week didn't happen`;
+    }
+    function effortClause(e){
+      if(e<=1) return "effort barely registered at 1/5";
+      if(e===2) return "effort stayed low at 2/5";
+      if(e===3) return "effort sat in the middle at 3/5";
+      if(e===4) return "effort ran high at 4/5";
+      return "effort maxed out at 5/5";
+    }
+    function hrClause(h){
+      if(h<=-3) return `resting heart rate dropped a real ${Math.abs(h)}bpm`;
+      if(h<=-1) return `resting heart rate eased down ${Math.abs(h)}bpm`;
+      if(h===0) return "resting heart rate held flat";
+      if(h<=2) return `resting heart rate crept up ${h}bpm`;
+      if(h<=4) return `resting heart rate climbed a noticeable ${h}bpm`;
+      return `resting heart rate jumped ${h}bpm`;
+    }
+    function composeDetail(s, e, h, dpw, closing){
+      return `${attendanceClause(s, dpw)}, ${effortClause(e)}, and ${hrClause(h)}. ${closing}`;
+    }
     function verdict(s, e, h){
-      const completion = s/7;
-      const hrPhrase = h === 0 ? "flat" : (h > 0 ? `up ${h}bpm` : `down ${Math.abs(h)}bpm`);
+      const dpw = 5; // illustrative fixed frequency for this demo widget
+      const completion = s/dpw;
       if(completion < 0.5 && h >= 4){
-        return {t:"OVERREACH", d:`${s}/7 sessions and resting HR ${hrPhrase} together is the specific combination that means overreach, not a rough week. Volume drops meaningfully and the toughest session becomes recovery.`, c:"var(--coral)", bg:"rgba(168,65,47,0.14)"};
+        return {t:"OVERREACH", d:composeDetail(s,e,h,dpw,"That specific combination reads as overreach, not a rough week — volume drops meaningfully and the toughest session becomes recovery."), c:"var(--coral)", bg:"rgba(168,65,47,0.14)"};
       }
       if(completion < 0.6 && h > 1){
-        return {t:"PULL BACK", d:`${s}/7 sessions with resting HR ${hrPhrase} — recovery is falling behind the training, even if it doesn't look dramatic yet. Volume steps down and the hardest day swaps to recovery.`, c:"var(--coral)", bg:"rgba(168,65,47,0.12)"};
+        return {t:"PULL BACK", d:composeDetail(s,e,h,dpw,"Recovery is falling behind the training, even if it doesn't look dramatic yet — volume steps down and the hardest day swaps to recovery."), c:"var(--coral)", bg:"rgba(168,65,47,0.12)"};
       }
       if(completion < 0.6){
-        return {t:"REBUILD", d:`${s}/7 sessions, but resting HR ${hrPhrase} says your body had nothing to do with the miss — this reads as a calendar problem. Next week repeats the same targets instead of adding more.`, c:"var(--sky)", bg:"rgba(92,158,232,0.12)"};
+        return {t:"REBUILD", d:composeDetail(s,e,h,dpw,"Your body had nothing to do with the miss here — this reads as a calendar problem. Next week repeats the same targets instead of adding more."), c:"var(--sky)", bg:"rgba(92,158,232,0.12)"};
       }
       if(completion >= 0.7 && e >= 4 && h >= 1){
-        return {t:"GRINDING", d:`${s}/7 sessions at effort ${e}/5, resting HR ${hrPhrase} — everything's getting done, but it's taking a visible toll. Volume holds flat rather than adding to it.`, c:"var(--sky)", bg:"rgba(92,158,232,0.12)"};
+        return {t:"GRINDING", d:composeDetail(s,e,h,dpw,"Everything's getting done, but it's visibly costing something. Volume holds flat rather than adding to it."), c:"var(--sky)", bg:"rgba(92,158,232,0.12)"};
       }
       if(completion >= 0.85 && h <= -1 && e <= 2){
-        return {t:"BREAKTHROUGH", d:`${s}/7 sessions, resting HR ${hrPhrase}, effort barely registering at ${e}/5 — that combination is real fitness improvement, not luck. Next week adds real load.`, c:"var(--lime)", bg:"rgba(43,140,126,0.16)"};
+        return {t:"BREAKTHROUGH", d:composeDetail(s,e,h,dpw,"That combination is real fitness improvement, not luck. Next week adds real load."), c:"var(--lime)", bg:"rgba(43,140,126,0.16)"};
       }
       if(completion >= 0.85 && h <= 0 && e <= 3){
-        return {t:"PROGRESS", d:`${s}/7 sessions, resting HR ${hrPhrase}, effort at a manageable ${e}/5 — the plan is landing well. Next week adds a bit more.`, c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
+        return {t:"PROGRESS", d:composeDetail(s,e,h,dpw,"The plan is landing well. Next week adds a bit more."), c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
       }
-      return {t:"HOLD STEADY", d:`${s}/7 sessions, effort ${e}/5, resting HR ${hrPhrase} — nothing here calls for a change. Next week repeats this week's plan as written.`, c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
+      return {t:"HOLD STEADY", d:composeDetail(s,e,h,dpw,"Nothing here calls for a change. Next week repeats this week's plan as written."), c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
     }
 
     function update(){
