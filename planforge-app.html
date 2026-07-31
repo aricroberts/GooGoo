@@ -680,9 +680,19 @@ function doShare(kind, plan, completedCount, pct, phaseName, nextDay, platform, 
     }
     return;
   }
+  if(platform === 'facebook'){
+    // Facebook stopped honoring pre-filled caption text years ago (spam prevention) —
+    // the composer opens genuinely blank by design. Copy the caption so there's
+    // something to paste instead of silently opening an empty post.
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(content.text).catch(function(){});
+    }
+    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(SHARE_URL), '_blank', 'noopener,width=600,height=500');
+    alert('Facebook doesn\'t accept pre-filled captions anymore — your caption is copied to the clipboard, just paste it into the post.');
+    return;
+  }
   var shareUrls = {
     x: 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(content.text) + '&url=' + encodeURIComponent(SHARE_URL),
-    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(SHARE_URL) + '&quote=' + encodeURIComponent(content.text),
     linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(SHARE_URL)
   };
   if(shareUrls[platform]) window.open(shareUrls[platform], '_blank', 'noopener,width=600,height=500');
@@ -1210,10 +1220,22 @@ function buildProgressChart(){
 
   var shareTrendBtn = el('shareTrendBtn');
   if(shareTrendBtn) shareTrendBtn.onclick = function(){
-    state.shareKind = 'progress';
-    render();
-    var target = document.querySelector('.share-preview');
-    if(target) target.scrollIntoView({behavior:'smooth', block:'center'});
+    var canShareFiles = navigator.canShare && (function(){
+      try{ return navigator.canShare({files:[new File([""],"t.png",{type:"image/png"})]}); }catch(e){ return false; }
+    })();
+    if(canShareFiles){
+      var trends = getTrendDeltas(state.checkins);
+      var completedArr2 = state.progress.completed_days||[];
+      var pct2 = Math.round(completedArr2.length/100*100);
+      var phase2 = phaseForDay(Math.max(1, completedArr2.length+1));
+      var caption = buildShareContent('progress', state.plan, completedArr2.length, pct2, phase2.name, null, trends).text;
+      shareChartImage(caption);
+    } else {
+      state.shareKind = 'progress';
+      render();
+      var target = document.querySelector('.share-preview');
+      if(target) target.scrollIntoView({behavior:'smooth', block:'center'});
+    }
   };
 }
 
@@ -1225,6 +1247,50 @@ function getTrendDeltas(checkins){
     return { first: vals[0], last: vals[vals.length-1], change: vals[vals.length-1]-vals[0] };
   }
   return { waist: delta('waist'), weight: delta('weight') };
+}
+
+function shareChartImage(captionText){
+  var svg = el('chartSvg');
+  if(!svg){ alert('No chart to share yet.'); return; }
+  var svgData = new XMLSerializer().serializeToString(svg);
+  if(svgData.indexOf('xmlns=') === -1){
+    svgData = svgData.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  var scale = 2;
+  var vb = svg.viewBox && svg.viewBox.baseVal;
+  var vw = (vb && vb.width) || 640, vh = (vb && vb.height) || 180;
+  var canvas = document.createElement('canvas');
+  canvas.width = vw*scale; canvas.height = (vh+40)*scale; // extra bottom margin for a footer label
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  var img = new Image();
+  var svgBlob = new Blob([svgData], {type:'image/svg+xml;charset=utf-8'});
+  var url = URL.createObjectURL(svgBlob);
+  img.onload = function(){
+    ctx.setTransform(scale,0,0,scale,0,0);
+    ctx.drawImage(img, 0, 0, vw, vh);
+    ctx.fillStyle = '#5B6270';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('PlanForge · googoo.aricciviclabs.org/planforge-app.html', 18, vh+26);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(function(blob){
+      if(!blob){ alert('Could not render the chart image.'); return; }
+      var file = new File([blob], 'planforge-progress.png', {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({ files:[file], title:'My PlanForge progress', text: captionText||'' }).catch(function(){});
+      } else {
+        var dlUrl = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = dlUrl; link.download = 'planforge-progress.png';
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        setTimeout(function(){ URL.revokeObjectURL(dlUrl); }, 4000);
+        alert('This browser can\'t attach images directly to a share sheet — the chart image downloaded instead, attach it manually to your post.');
+      }
+    }, 'image/png');
+  };
+  img.onerror = function(){ alert('Could not render the chart image.'); };
+  img.src = url;
 }
 
 /* ═══════════════════════════ EVENTS ═══════════════════════════ */
