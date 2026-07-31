@@ -53,9 +53,12 @@
     user_id uuid not null references auth.users(id) on delete cascade,
     week_number int not null,
     sessions_completed int not null,
+    days_per_week int,
     effort int not null,
     hr_delta int not null,
     waist numeric,
+    weight numeric,
+    notes text,
     verdict text not null,
     created_at timestamptz not null default now()
   );
@@ -481,52 +484,53 @@ function generateDayMap(plan){
 }
 
 /* ═══════════════════════════ ADAPTIVE ENGINE ═══════════════════════════ */
-function checkinVerdict(sessions, effort, hrDelta){
-  var completion = sessions/7;
+function checkinVerdict(sessions, effort, hrDelta, daysPerWeek){
+  daysPerWeek = daysPerWeek || 7;
+  var completion = sessions/daysPerWeek;
   var hrUp = hrDelta > 0;
   var hrPhrase = hrDelta === 0 ? 'flat' : (hrUp ? 'up '+hrDelta+'bpm' : 'down '+Math.abs(hrDelta)+'bpm');
 
   if(completion < 0.5 && hrDelta >= 4) return {
     tag:'OVERREACH', color:'var(--coral)', bg:'rgba(168,65,47,.14)',
-    detail: sessions+'/7 sessions and resting HR '+hrPhrase+' together is the specific combination that means overreach, not a rough week. Volume drops meaningfully and the toughest session on the calendar becomes a recovery day.',
+    detail: sessions+'/'+daysPerWeek+' sessions and resting HR '+hrPhrase+' together is the specific combination that means overreach, not a rough week. Volume drops meaningfully and the toughest session on the calendar becomes a recovery day.',
     volMult:0.75, swapHardestDay:true
   };
   if(completion < 0.6 && hrDelta > 1) return {
     tag:'PULL BACK', color:'var(--coral)', bg:'rgba(168,65,47,.12)',
-    detail: sessions+'/7 sessions with resting HR '+hrPhrase+' — recovery is falling behind the training, even if it does not look dramatic yet. Volume steps down and the hardest day swaps to recovery before this compounds.',
+    detail: sessions+'/'+daysPerWeek+' sessions with resting HR '+hrPhrase+' — recovery is falling behind the training, even if it does not look dramatic yet. Volume steps down and the hardest day swaps to recovery before this compounds.',
     volMult:0.85, swapHardestDay:true
   };
   if(completion < 0.6){
     return {
       tag:'REBUILD', color:'var(--sky)', bg:'rgba(92,158,232,.12)',
-      detail: sessions+'/7 sessions, but resting HR '+hrPhrase+' says your body had nothing to do with the miss — this reads as a calendar problem. Next week repeats the same targets instead of adding more on top of a plan that is not fitting the week yet.',
+      detail: sessions+'/'+daysPerWeek+' sessions, but resting HR '+hrPhrase+' says your body had nothing to do with the miss — this reads as a calendar problem. Next week repeats the same targets instead of adding more on top of a plan that is not fitting the week yet.',
       volMult:1.0, swapHardestDay:false
     };
   }
   if(completion >= 0.7 && effort >= 4 && hrDelta >= 1){
     return {
       tag:'GRINDING', color:'var(--sky)', bg:'rgba(92,158,232,.12)',
-      detail: sessions+'/7 sessions at effort '+effort+'/5, resting HR '+hrPhrase+' — you are getting everything done, but it is taking a visible toll. Volume holds flat this week rather than adding to it.',
+      detail: sessions+'/'+daysPerWeek+' sessions at effort '+effort+'/5, resting HR '+hrPhrase+' — you are getting everything done, but it is taking a visible toll. Volume holds flat this week rather than adding to it.',
       volMult:1.0, swapHardestDay:false
     };
   }
   if(completion >= 0.85 && hrDelta <= -1 && effort <= 2){
     return {
       tag:'BREAKTHROUGH', color:'var(--lime)', bg:'rgba(43,140,126,.16)',
-      detail: sessions+'/7 sessions, resting HR '+hrPhrase+', effort barely registering at '+effort+'/5 — that specific combination is your fitness improving in real time, not luck. Next week adds real load while it is working.',
+      detail: sessions+'/'+daysPerWeek+' sessions, resting HR '+hrPhrase+', effort barely registering at '+effort+'/5 — that specific combination is your fitness improving in real time, not luck. Next week adds real load while it is working.',
       volMult:1.15, swapHardestDay:false
     };
   }
   if(completion >= 0.85 && hrDelta<=0 && effort<=3){
     return {
       tag:'PROGRESS', color:'var(--lime)', bg:'rgba(43,140,126,.12)',
-      detail: sessions+'/7 sessions, resting HR '+hrPhrase+', effort at a manageable '+effort+'/5 — the plan is landing well at its current level. Next week adds a bit more.',
+      detail: sessions+'/'+daysPerWeek+' sessions, resting HR '+hrPhrase+', effort at a manageable '+effort+'/5 — the plan is landing well at its current level. Next week adds a bit more.',
       volMult:1.1, swapHardestDay:false
     };
   }
   return {
     tag:'HOLD STEADY', color:'var(--lime)', bg:'rgba(43,140,126,.12)',
-    detail: sessions+'/7 sessions, effort '+effort+'/5, resting HR '+hrPhrase+' — nothing here calls for a change in either direction. Next week repeats this week\'s plan as written.',
+    detail: sessions+'/'+daysPerWeek+' sessions, effort '+effort+'/5, resting HR '+hrPhrase+' — nothing here calls for a change in either direction. Next week repeats this week\'s plan as written.',
     volMult:1.0, swapHardestDay:false
   };
 }
@@ -668,7 +672,7 @@ var state = {
   progress: { completed_days: [] },
   checkins: [],
   expandedDay: null,
-  ciSessions: 4, ciEffort: 3, ciHr: 0, ciWaist: '',
+  ciSessions: 4, ciEffort: 3, ciHr: 0, ciWaist: '', ciWeight: '', ciNotes: '',
   shareKind: 'progress'
 };
 
@@ -716,7 +720,7 @@ async function loadUserData(){
     state.progress = (progressRows && progressRows[0]) || { completed_days: [] };
     var checkins = await db('/checkins_cust?select=*&order=week_number.asc');
     state.checkins = checkins || [];
-    state.ciSessions = Math.min(7, (state.progress.completed_days||[]).length % 7 || 4);
+    state.ciSessions = Math.min(state.plan.days_per_week, (state.progress.completed_days||[]).length % 7 || Math.ceil(state.plan.days_per_week/2));
     state.screen = 'app';
   } catch(e){
     console.error(e);
@@ -801,8 +805,8 @@ async function toggleDay(dayNum){
   } catch(e){ console.error(e); }
 }
 async function submitCheckin(){
-  var s = state.ciSessions, e = state.ciEffort, h = state.ciHr, w = state.ciWaist;
-  var v = checkinVerdict(s, e, h);
+  var s = state.ciSessions, e = state.ciEffort, h = state.ciHr, w = state.ciWaist, wt = state.ciWeight, notes = state.ciNotes;
+  var v = checkinVerdict(s, e, h, state.plan.days_per_week);
   var currentDay = (state.progress.completed_days||[]).length || 1;
   var weekNumber = state.checkins.length + 1;
   state.busy = true; render();
@@ -815,9 +819,10 @@ async function submitCheckin(){
     state.plan = updatedPlan;
     var row = await db('/checkins_cust', {
       method:'POST',
-      body: JSON.stringify({ user_id: state.session.user.id, week_number: weekNumber, sessions_completed:s, effort:e, hr_delta:h, waist: w||null, verdict:v.tag })
+      body: JSON.stringify({ user_id: state.session.user.id, week_number: weekNumber, sessions_completed:s, days_per_week: state.plan.days_per_week, effort:e, hr_delta:h, waist: w||null, weight: wt||null, notes: notes||null, verdict:v.tag })
     });
     state.checkins = state.checkins.concat([row[0]]);
+    state.ciNotes = '';
     state.busy = false;
     render();
   } catch(err){
@@ -979,14 +984,16 @@ function renderAppBody(){
     + '<div class="card '+(checkinDue ? 'checkin-due' : '')+'">'
     +   '<div class="card-h"><div class="card-title">WEEKLY CHECK-IN · MANUAL INPUT</div>'+(checkinDue ? '<span class="mono" style="font-size:11px;color:var(--lime);">DUE</span>' : '')+'</div>'
     +   '<div class="checkin-grid">'
-    +     '<div class="ci-field"><div class="ci-label">Sessions completed this week <b id="valSessions">'+state.ciSessions+'</b>/7</div><input type="range" min="0" max="7" value="'+state.ciSessions+'" id="inSessions" class="slider" /></div>'
+    +     '<div class="ci-field"><div class="ci-label">Sessions completed this week <b id="valSessions">'+Math.min(state.ciSessions, state.plan.days_per_week)+'</b>/'+state.plan.days_per_week+' (your goal)</div><input type="range" min="0" max="'+state.plan.days_per_week+'" value="'+Math.min(state.ciSessions, state.plan.days_per_week)+'" id="inSessions" class="slider" /></div>'
     +     '<div class="ci-field"><div class="ci-label">Perceived effort <b id="valEffort">'+state.ciEffort+'</b>/5</div><input type="range" min="1" max="5" value="'+state.ciEffort+'" id="inEffort" class="slider" /></div>'
     +     '<div class="ci-field"><div class="ci-label">Resting HR vs last week <b id="valHr">'+(state.ciHr>0?'+':'')+state.ciHr+'</b> bpm</div><input type="range" min="-6" max="8" value="'+state.ciHr+'" id="inHr" class="slider" /></div>'
     +     '<div class="ci-field"><div class="ci-label">Waist this week (in)</div><input type="number" step="0.1" placeholder="optional" value="'+state.ciWaist+'" id="inWaist" /></div>'
+    +     '<div class="ci-field"><div class="ci-label">Weight this week</div><input type="number" step="0.1" placeholder="optional" value="'+state.ciWeight+'" id="inWeight" /></div>'
     +   '</div>'
+    +   '<div class="ci-field" style="margin-bottom:14px;"><div class="ci-label">Notes <span style="color:var(--muted-dim);">(optional, just for you — never shared)</span></div><textarea id="inNotes" placeholder="Anything worth remembering about this week..." rows="2" style="width:100%; background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-family:inherit; font-size:13px; resize:vertical;">'+state.ciNotes+'</textarea></div>'
     +   '<div class="verdict-box" id="verdictBox"></div>'
     +   '<button class="btn btn-primary btn-block" id="ciSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy?'Updating plan…':'Submit check-in & update plan')+'</button>'
-    +   (state.checkins.length ? '<div class="last-checkin">Last check-in: week '+state.checkins[state.checkins.length-1].week_number+' → '+state.checkins[state.checkins.length-1].verdict+'</div>' : '')
+    +   (state.checkins.length ? '<div class="last-checkin">Last check-in: week '+state.checkins[state.checkins.length-1].week_number+' → '+state.checkins[state.checkins.length-1].verdict+(state.checkins[state.checkins.length-1].notes ? ' · "'+state.checkins[state.checkins.length-1].notes+'"' : '')+'</div>' : '')
     + '</div>'
 
     + '<div class="card">'
@@ -1082,22 +1089,30 @@ function buildProgressChart(){
   var i;
   for(i=0;i<state.checkins.length;i++){ hrEstimate += state.checkins[i].hr_delta; hrSeries.push(hrEstimate); }
   var completionSeries = [];
-  for(i=0;i<state.checkins.length;i++){ completionSeries.push(Math.round(state.checkins[i].sessions_completed/7*100)); }
+  for(i=0;i<state.checkins.length;i++){
+    var dpw = state.checkins[i].days_per_week || 7; // older rows saved before this fix fall back to 7
+    completionSeries.push(Math.round(state.checkins[i].sessions_completed/dpw*100));
+  }
   var waistSeries = [];
   for(i=0;i<state.checkins.length;i++){ if(state.checkins[i].waist!=null) waistSeries.push(state.checkins[i].waist); }
+  var weightSeries = [];
+  for(i=0;i<state.checkins.length;i++){ if(state.checkins[i].weight!=null) weightSeries.push(state.checkins[i].weight); }
 
   var metrics = {
-    completion: { label:'Weekly completion (%)', color:'#D4FF3F', data: completionSeries },
-    hr:         { label:'Resting HR estimate (bpm)', color:'#5BC8FF', data: hrSeries }
+    completion: { label:'Weekly completion (% of goal)', color:'#2B8C7E', data: completionSeries },
+    hr:         { label:'Resting HR estimate (bpm)', color:'#3B7DD8', data: hrSeries }
   };
   if(waistSeries.length === state.checkins.length){
-    metrics.waist = { label:'Waist (in)', color:'#FF5B5B', data: waistSeries };
+    metrics.waist = { label:'Waist (in)', color:'#A8412F', data: waistSeries };
+  }
+  if(weightSeries.length === state.checkins.length){
+    metrics.weight = { label:'Weight', color:'#C97A0A', data: weightSeries };
   }
 
   var svg = el('chartSvg'); var toggles = el('chartToggles');
   if(!svg || !toggles) return;
   toggles.innerHTML = '';
-  var on = { waist:true, hr:true, completion:true };
+  var on = { waist:true, weight:true, hr:true, completion:true };
 
   function draw(){
     svg.innerHTML = '';
@@ -1232,16 +1247,18 @@ function wireEvents(){
     // note: phase tabs are handled entirely by the radio-input + CSS :checked
     // rules above — no click handlers needed for switching.
 
-    var sEl=el('inSessions'), eEl=el('inEffort'), hEl=el('inHr'), wEl=el('inWaist');
+    var sEl=el('inSessions'), eEl=el('inEffort'), hEl=el('inHr'), wEl=el('inWaist'), wtEl=el('inWeight'), nEl=el('inNotes');
     function updateVerdict(){
       state.ciSessions=Number(sEl.value); state.ciEffort=Number(eEl.value); state.ciHr=Number(hEl.value); state.ciWaist=wEl.value;
       el('valSessions').textContent=state.ciSessions; el('valEffort').textContent=state.ciEffort;
       el('valHr').textContent=(state.ciHr>0?'+':'')+state.ciHr;
-      var v = checkinVerdict(state.ciSessions, state.ciEffort, state.ciHr);
+      var v = checkinVerdict(state.ciSessions, state.ciEffort, state.ciHr, state.plan.days_per_week);
       el('verdictBox').innerHTML = '<span class="verdict-tag" style="color:'+v.color+';background:'+v.bg+';">'+v.tag+'</span><span>'+v.detail+'</span>';
     }
     sEl.oninput = updateVerdict; eEl.oninput = updateVerdict; hEl.oninput = updateVerdict;
     wEl.oninput = function(){ state.ciWaist = wEl.value; };
+    wtEl.oninput = function(){ state.ciWeight = wtEl.value; };
+    nEl.oninput = function(){ state.ciNotes = nEl.value; };
     updateVerdict();
     el('ciSubmit').onclick = function(){ submitCheckin(); };
 
