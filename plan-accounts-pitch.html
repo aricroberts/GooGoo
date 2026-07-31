@@ -709,16 +709,26 @@
 
     function verdict(s, e, h){
       const completion = s/7;
-      if(completion < 0.6 && h > 2){
-        return {t:"PULL BACK", d:`Only ${s}/7 sessions logged and resting HR reported up ${h}bpm — reads as early overreach. Next week's volume drops ~20% and a recovery day replaces the hardest session.`, c:"var(--coral)", bg:"rgba(168,65,47,0.12)"};
+      const hrPhrase = h === 0 ? "flat" : (h > 0 ? `up ${h}bpm` : `down ${Math.abs(h)}bpm`);
+      if(completion < 0.5 && h >= 4){
+        return {t:"OVERREACH", d:`${s}/7 sessions and resting HR ${hrPhrase} together is the specific combination that means overreach, not a rough week. Volume drops meaningfully and the toughest session becomes recovery.`, c:"var(--coral)", bg:"rgba(168,65,47,0.14)"};
+      }
+      if(completion < 0.6 && h > 1){
+        return {t:"PULL BACK", d:`${s}/7 sessions with resting HR ${hrPhrase} — recovery is falling behind the training, even if it doesn't look dramatic yet. Volume steps down and the hardest day swaps to recovery.`, c:"var(--coral)", bg:"rgba(168,65,47,0.12)"};
       }
       if(completion < 0.6){
-        return {t:"REBUILD", d:`Only ${s}/7 sessions logged, but resting HR is steady — reads as a scheduling problem, not overreach. Next week repeats this week's targets instead of progressing.`, c:"var(--sky)", bg:"rgba(92,158,232,0.12)"};
+        return {t:"REBUILD", d:`${s}/7 sessions, but resting HR ${hrPhrase} says your body had nothing to do with the miss — this reads as a calendar problem. Next week repeats the same targets instead of adding more.`, c:"var(--sky)", bg:"rgba(92,158,232,0.12)"};
+      }
+      if(completion >= 0.7 && e >= 4 && h >= 1){
+        return {t:"GRINDING", d:`${s}/7 sessions at effort ${e}/5, resting HR ${hrPhrase} — everything's getting done, but it's taking a visible toll. Volume holds flat rather than adding to it.`, c:"var(--sky)", bg:"rgba(92,158,232,0.12)"};
+      }
+      if(completion >= 0.85 && h <= -1 && e <= 2){
+        return {t:"BREAKTHROUGH", d:`${s}/7 sessions, resting HR ${hrPhrase}, effort barely registering at ${e}/5 — that combination is real fitness improvement, not luck. Next week adds real load.`, c:"var(--lime)", bg:"rgba(43,140,126,0.16)"};
       }
       if(completion >= 0.85 && h <= 0 && e <= 3){
-        return {t:"PROGRESS", d:`${s}/7 sessions, resting HR flat or down, effort reported low — next week adds load or a rep to the chest and cardio sessions.`, c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
+        return {t:"PROGRESS", d:`${s}/7 sessions, resting HR ${hrPhrase}, effort at a manageable ${e}/5 — the plan is landing well. Next week adds a bit more.`, c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
       }
-      return {t:"HOLD STEADY", d:"Numbers are in range — next week repeats this week's plan as written.", c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
+      return {t:"HOLD STEADY", d:`${s}/7 sessions, effort ${e}/5, resting HR ${hrPhrase} — nothing here calls for a change. Next week repeats this week's plan as written.`, c:"var(--lime)", bg:"rgba(43,140,126,0.12)"};
     }
 
     function update(){

@@ -483,24 +483,50 @@ function generateDayMap(plan){
 /* ═══════════════════════════ ADAPTIVE ENGINE ═══════════════════════════ */
 function checkinVerdict(sessions, effort, hrDelta){
   var completion = sessions/7;
-  if(completion < 0.6 && hrDelta > 2) return {
+  var hrUp = hrDelta > 0;
+  var hrPhrase = hrDelta === 0 ? 'flat' : (hrUp ? 'up '+hrDelta+'bpm' : 'down '+Math.abs(hrDelta)+'bpm');
+
+  if(completion < 0.5 && hrDelta >= 4) return {
+    tag:'OVERREACH', color:'var(--coral)', bg:'rgba(168,65,47,.14)',
+    detail: sessions+'/7 sessions and resting HR '+hrPhrase+' together is the specific combination that means overreach, not a rough week. Volume drops meaningfully and the toughest session on the calendar becomes a recovery day.',
+    volMult:0.75, swapHardestDay:true
+  };
+  if(completion < 0.6 && hrDelta > 1) return {
     tag:'PULL BACK', color:'var(--coral)', bg:'rgba(168,65,47,.12)',
-    detail:'Only '+sessions+'/7 sessions logged and resting HR reported up '+hrDelta+'bpm — reads as early overreach. Next week\'s volume drops and the hardest day swaps to recovery.',
-    volMult:0.8, swapHardestDay:true
+    detail: sessions+'/7 sessions with resting HR '+hrPhrase+' — recovery is falling behind the training, even if it does not look dramatic yet. Volume steps down and the hardest day swaps to recovery before this compounds.',
+    volMult:0.85, swapHardestDay:true
   };
-  if(completion < 0.6) return {
-    tag:'REBUILD', color:'var(--sky)', bg:'rgba(92,158,232,.12)',
-    detail:'Only '+sessions+'/7 sessions logged, but HR is steady — reads as a scheduling problem, not overreach. Next week repeats this week\'s targets.',
-    volMult:1.0, swapHardestDay:false
-  };
-  if(completion >= 0.85 && hrDelta<=0 && effort<=3) return {
-    tag:'PROGRESS', color:'var(--lime)', bg:'rgba(43,140,126,.12)',
-    detail: sessions+'/7 sessions, resting HR flat or down, effort reported low — next week adds load.',
-    volMult:1.1, swapHardestDay:false
-  };
+  if(completion < 0.6){
+    return {
+      tag:'REBUILD', color:'var(--sky)', bg:'rgba(92,158,232,.12)',
+      detail: sessions+'/7 sessions, but resting HR '+hrPhrase+' says your body had nothing to do with the miss — this reads as a calendar problem. Next week repeats the same targets instead of adding more on top of a plan that is not fitting the week yet.',
+      volMult:1.0, swapHardestDay:false
+    };
+  }
+  if(completion >= 0.7 && effort >= 4 && hrDelta >= 1){
+    return {
+      tag:'GRINDING', color:'var(--sky)', bg:'rgba(92,158,232,.12)',
+      detail: sessions+'/7 sessions at effort '+effort+'/5, resting HR '+hrPhrase+' — you are getting everything done, but it is taking a visible toll. Volume holds flat this week rather than adding to it.',
+      volMult:1.0, swapHardestDay:false
+    };
+  }
+  if(completion >= 0.85 && hrDelta <= -1 && effort <= 2){
+    return {
+      tag:'BREAKTHROUGH', color:'var(--lime)', bg:'rgba(43,140,126,.16)',
+      detail: sessions+'/7 sessions, resting HR '+hrPhrase+', effort barely registering at '+effort+'/5 — that specific combination is your fitness improving in real time, not luck. Next week adds real load while it is working.',
+      volMult:1.15, swapHardestDay:false
+    };
+  }
+  if(completion >= 0.85 && hrDelta<=0 && effort<=3){
+    return {
+      tag:'PROGRESS', color:'var(--lime)', bg:'rgba(43,140,126,.12)',
+      detail: sessions+'/7 sessions, resting HR '+hrPhrase+', effort at a manageable '+effort+'/5 — the plan is landing well at its current level. Next week adds a bit more.',
+      volMult:1.1, swapHardestDay:false
+    };
+  }
   return {
     tag:'HOLD STEADY', color:'var(--lime)', bg:'rgba(43,140,126,.12)',
-    detail:'Numbers are in range — next week repeats this week\'s plan as written.',
+    detail: sessions+'/7 sessions, effort '+effort+'/5, resting HR '+hrPhrase+' — nothing here calls for a change in either direction. Next week repeats this week\'s plan as written.',
     volMult:1.0, swapHardestDay:false
   };
 }
@@ -516,13 +542,19 @@ var DIET_BASELINE_BY_GOAL = {
   mobility: 'Nothing exotic needed here — consistent, regular meals support the recovery this kind of training relies on.'
 };
 var DIET_BY_VERDICT = {
+  'OVERREACH': 'This is not the week to be in a deficit — under-eating on top of overreaching slows recovery further. Prioritize carbohydrate and protein at every meal, not just around training.',
   'PULL BACK': 'This is a recovery week, not a restriction week — prioritize protein and carbohydrate around training rather than cutting back.',
   'REBUILD': 'Missed sessions often trace back to under-fueling earlier in the day — check you\'re eating enough before training, not just after.',
+  'GRINDING': 'High output weeks burn through more than usual — this is a good week to eat slightly more than feels necessary, not less.',
+  'BREAKTHROUGH': 'Whatever you\'re doing nutritionally is supporting real adaptation — this is a week to keep it consistent, not to change anything.',
   'PROGRESS': 'Things are clicking — a good phase to dial in consistency rather than perfection: roughly the same meal times, most days.'
 };
 var SLEEP_BY_VERDICT = {
+  'OVERREACH': 'This combination of missed sessions and a real HR spike is often as much a sleep problem as a training one — an extra hour a night this week can matter more than any workout on the calendar.',
   'PULL BACK': 'A rising resting heart rate alongside missed sessions often reads as sleep debt more than a motivation problem — one or two earlier nights can matter more than the workout itself this week.',
   'REBUILD': 'A consistent wake time, even on rest days, tends to make morning sessions easier to actually show up for.',
+  'GRINDING': 'Effort is high and HR is creeping — sleep is the recovery lever that\'s easiest to underrate here. Worth protecting it deliberately this week.',
+  'BREAKTHROUGH': 'Falling resting heart rate alongside low perceived effort usually means sleep and training are working together well right now — keep whatever pattern got you here.',
   'PROGRESS': 'Adaptation happens during sleep, not just during training — protect the 7+ hours while things are working.'
 };
 var SLEEP_BASELINE_BY_PHASE = {
@@ -532,8 +564,11 @@ var SLEEP_BASELINE_BY_PHASE = {
   4: 'You\'re close to the finish — don\'t trade sleep for a bit of extra effort this late.'
 };
 var PSYCH_BY_VERDICT = {
+  'OVERREACH': 'This isn\'t a discipline problem — it\'s a signal. Pushing through this pattern usually backfires; the plan backing off is the correct response, not a consolation prize.',
   'PULL BACK': 'A dip isn\'t a failure — the plan already adjusted for you. This week, aim for "showed up" over "crushed it."',
   'REBUILD': 'Low completion without physical strain usually means the schedule doesn\'t fit yet, not that willpower is the problem — worth naming which specific day keeps getting missed.',
+  'GRINDING': 'Getting everything done while feeling it is a real accomplishment, not something to push past — notice the cost, not just the checkmark.',
+  'BREAKTHROUGH': 'This is what it looks like when the plan and your body agree — worth actually noticing this feeling, since it\'s the thing to chase, not just the numbers.',
   'PROGRESS': 'This is the phase where habits actually cement — notice what made this stretch work so you can repeat it on purpose, not by accident.'
 };
 var PSYCH_BASELINE_BY_PHASE = {
