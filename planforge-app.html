@@ -374,9 +374,20 @@ async function db(path, opts){
     Authorization: 'Bearer ' + (session ? session.access_token : SB_KEY),
     Prefer: opts.prefer || 'return=representation'
   }, opts.headers||{});
-  var res = await fetch(SB_URL + '/rest/v1' + path, {
-    method: opts.method, body: opts.body, headers: headers
-  });
+  var controller = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, 15000) : null;
+  var res;
+  try{
+    res = await fetch(SB_URL + '/rest/v1' + path, {
+      method: opts.method, body: opts.body, headers: headers,
+      signal: controller ? controller.signal : undefined
+    });
+  } catch(fetchErr){
+    if(fetchErr && fetchErr.name === 'AbortError') throw new Error('Request timed out after 15s — check your connection and try again.');
+    throw fetchErr;
+  } finally {
+    if(timeoutId) clearTimeout(timeoutId);
+  }
   if(!res.ok){ var t = await res.text(); throw new Error('DB error: ' + t); }
   var text = await res.text();
   return text ? JSON.parse(text) : null;
