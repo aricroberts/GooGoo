@@ -6,6 +6,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#FAFAF7">
 <title>PlanForge — AricCivicLabs Pillar 5 · Health &amp; Vitality</title>
+<meta name="description" content="A 100-day workout plan that's generated for you and adapts weekly from your own check-ins. First plan free. No subscription." />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="PlanForge · AricCivicLabs" />
+<meta property="og:title" content="PlanForge — the plan that adjusts to your real week" />
+<meta property="og:description" content="Generated, not hardcoded. Adapts weekly from your own check-ins. First plan free. No subscription." />
+<meta property="og:url" content="https://googoo.aricciviclabs.org/planforge-app.html" />
+<meta property="og:image" content="https://googoo.aricciviclabs.org/planforge-og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://googoo.aricciviclabs.org/planforge-og-image.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 
@@ -174,6 +185,15 @@
   .lt-icon{font-size:19px; flex-shrink:0; line-height:1.4;}
   .lt-label{font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--lime); margin-bottom:4px;}
   .lifestyle-tip p{font-size:13px; color:var(--muted); line-height:1.55; margin:0;}
+  .share-kinds{display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;}
+  .share-kind{font-family:'IBM Plex Mono',monospace; font-size:11px; padding:7px 12px; border-radius:999px; border:1px solid var(--border); background:var(--surface-alt); color:var(--muted); cursor:pointer;}
+  .share-kind.active{border-color:var(--lime); color:var(--lime); background:rgba(43,140,126,.08); font-weight:700;}
+  .share-preview{background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:13px; color:var(--text); line-height:1.55; margin-bottom:14px;}
+  .share-preview .url{color:var(--sky); word-break:break-all;}
+  .share-buttons{display:flex; gap:8px; flex-wrap:wrap;}
+  .share-btn{display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; padding:9px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface-alt); color:var(--text); cursor:pointer;}
+  .share-btn:hover{border-color:var(--muted);}
+  .share-btn.native{background:var(--lime); border-color:var(--lime); color:#fff;}
   .checkin-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; margin:16px 0;}
   .ci-field{display:flex; flex-direction:column; gap:8px;}
   .ci-label{font-size:12.5px; color:var(--muted); display:flex; gap:6px; flex-wrap:wrap;}
@@ -529,6 +549,53 @@ function getLifestyleTips(plan, checkins, completedCount){
   ];
 }
 
+/* ═══════════════════════════ SHARE ═══════════════════════════ */
+var SHARE_URL = 'https://googoo.aricciviclabs.org/plan-accounts-pitch.html';
+var GOAL_LABELS = { fat:'fat loss', strength:'strength', mobility:'mobility' };
+
+function buildShareContent(kind, plan, completedCount, pct, phaseName, nextDay){
+  var goalLabel = GOAL_LABELS[plan.goal] || plan.goal;
+  if(kind === 'today' && nextDay){
+    return {
+      title: 'My PlanForge workout today',
+      text: 'Today\'s workout from my PlanForge plan (' + phaseName + ', ' + goalLabel + '): ' + nextDay.label + ' — ' + nextDay.detail + '. Free plan generator that actually adapts to your week:'
+    };
+  }
+  if(kind === 'tool'){
+    return {
+      title: 'PlanForge',
+      text: 'Found a workout plan that actually adjusts to your real week instead of ignoring it — PlanForge generates a 100-day plan and adapts it weekly from your own check-ins. No subscription, first plan free:'
+    };
+  }
+  // progress (default)
+  return {
+    title: 'My PlanForge progress',
+    text: completedCount + ' days into my PlanForge 100-day ' + goalLabel + ' plan (' + pct + '% done, currently in ' + phaseName + ') — it adapts every week from my own check-ins instead of staying static. Free to start:'
+  };
+}
+function doShare(kind, plan, completedCount, pct, phaseName, nextDay, platform){
+  var content = buildShareContent(kind, plan, completedCount, pct, phaseName, nextDay);
+  var full = content.text + ' ' + SHARE_URL;
+  if(platform === 'native' && navigator.share){
+    navigator.share({ title: content.title, text: content.text, url: SHARE_URL }).catch(function(){});
+    return;
+  }
+  if(platform === 'copy'){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(full).then(function(){ alert('Copied to clipboard!'); }).catch(function(){ prompt('Copy this:', full); });
+    } else {
+      prompt('Copy this:', full);
+    }
+    return;
+  }
+  var shareUrls = {
+    x: 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(content.text) + '&url=' + encodeURIComponent(SHARE_URL),
+    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(SHARE_URL) + '&quote=' + encodeURIComponent(content.text),
+    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(SHARE_URL)
+  };
+  if(shareUrls[platform]) window.open(shareUrls[platform], '_blank', 'noopener,width=600,height=500');
+}
+
 function applyAdaptation(plan, currentDay, verdict){
   var newMod = Math.max(0.6, Math.min(1.4, (plan.volume_modifier||1) * verdict.volMult));
   var overrides = assign({}, plan.day_overrides||{});
@@ -555,7 +622,8 @@ var state = {
   progress: { completed_days: [] },
   checkins: [],
   expandedDay: null,
-  ciSessions: 4, ciEffort: 3, ciHr: 0, ciWaist: ''
+  ciSessions: 4, ciEffort: 3, ciHr: 0, ciWaist: '',
+  shareKind: 'progress'
 };
 
 async function boot(){
@@ -739,12 +807,13 @@ function renderAuth(){
   var isUp = state.authMode==='signup';
   return '<div class="auth-shell"><div class="auth-card">'
     + '<div class="auth-logo"><span class="dot"></span>PLANFORGE</div>'
-    + '<div class="auth-sub">' + (isUp ? 'Create an account to generate your plan.' : 'Sign in to pick up where you left off.') + '</div>'
+    + '<div class="auth-sub">' + (isUp ? 'Create your free account — your first 100-day plan is on us.' : 'Sign in to pick up where you left off.') + '</div>'
+    + (!isUp ? '<div class="onb-hint" style="margin-bottom:16px;">New here? Don\'t have an account yet — <a id="authSwitchToSignup" style="color:var(--lime); font-weight:700; cursor:pointer;">sign up</a>, it\'s free, and your first 100-day plan is too.</div>' : '')
     + (state.authError ? '<div class="auth-error">'+state.authError+'</div>' : '')
     + '<div class="field"><label>Email</label><input type="email" id="authEmail" placeholder="you@example.com" /></div>'
     + '<div class="field"><label>Password</label><input type="password" id="authPassword" placeholder="At least 6 characters" /></div>'
-    + '<button class="btn btn-primary btn-block" id="authSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy ? 'Working…' : (isUp ? 'Create account' : 'Sign in'))+'</button>'
-    + '<div class="auth-toggle">' + (isUp ? 'Already have an account?' : "Don't have an account?") + ' <a id="authToggle">' + (isUp ? 'Sign in' : 'Create one') + '</a></div>'
+    + '<button class="btn btn-primary btn-block" id="authSubmit" '+(state.busy?'disabled':'')+'>'+(state.busy ? 'Working…' : (isUp ? 'Create free account' : 'Sign in'))+'</button>'
+    + '<div class="auth-toggle">' + (isUp ? 'Already have an account?' : "Don't have an account?") + ' <a id="authToggle">' + (isUp ? 'Sign in' : 'Create one — free') + '</a></div>'
     + '</div></div>';
 }
 
@@ -815,6 +884,7 @@ function renderAppBody(){
   for(var dnum=1; dnum<=100; dnum++){ if(!completedSet[dnum]){ nextDay = dnum; break; } }
 
   var checkinDue = state.checkins.length===0 || (completedCount - (state.checkins.length*7)) >= 7;
+  var shareContent = buildShareContent(state.shareKind, state.plan, completedCount, pct, currentPhase.name, dayMap[nextDay]);
 
   // preserve the currently-selected phase tab across re-renders (CSS handles the switching itself)
   var existingChecked = document.querySelector('input[name="phaseTab"]:checked');
@@ -881,6 +951,23 @@ function renderAppBody(){
           }).join('')
     +   '</div>'
     +   '<div class="onb-hint">General guidance, not medical or nutrition advice — check with a professional for anything personalized to you.</div>'
+    + '</div>'
+
+    + '<div class="card">'
+    +   '<div class="card-title" style="margin-bottom:12px;">SHARE</div>'
+    +   '<div class="share-kinds" id="shareKinds">'
+    +     '<div class="share-kind '+(state.shareKind==='progress'?'active':'')+'" data-kind="progress">My progress</div>'
+    +     '<div class="share-kind '+(state.shareKind==='today'?'active':'')+'" data-kind="today">Today\'s workout</div>'
+    +     '<div class="share-kind '+(state.shareKind==='tool'?'active':'')+'" data-kind="tool">Just the app</div>'
+    +   '</div>'
+    +   '<div class="share-preview">'+shareContent.text+' <span class="url">'+SHARE_URL+'</span></div>'
+    +   '<div class="share-buttons">'
+    +     (typeof navigator!=='undefined' && navigator.share ? '<button class="share-btn native" data-platform="native">📱 Share</button>' : '')
+    +     '<button class="share-btn" data-platform="x">𝕏 X</button>'
+    +     '<button class="share-btn" data-platform="facebook">f Facebook</button>'
+    +     '<button class="share-btn" data-platform="linkedin">in LinkedIn</button>'
+    +     '<button class="share-btn" data-platform="copy">🔗 Copy link</button>'
+    +   '</div>'
     + '</div>'
 
     + '<div class="card">'
@@ -1023,6 +1110,8 @@ function wireEvents(){
     var emailEl = el('authEmail'), passEl = el('authPassword');
     el('authSubmit').onclick = function(){ handleAuthSubmit(emailEl.value.trim(), passEl.value); };
     el('authToggle').onclick = function(){ state.authMode = state.authMode==='signup'?'signin':'signup'; state.authError=''; render(); };
+    var switchLink = el('authSwitchToSignup');
+    if(switchLink) switchLink.onclick = function(){ state.authMode='signup'; state.authError=''; render(); };
   }
   if(state.screen==='onboarding'){
     var goal='fat', freq=5;
@@ -1109,6 +1198,30 @@ function wireEvents(){
     wEl.oninput = function(){ state.ciWaist = wEl.value; };
     updateVerdict();
     el('ciSubmit').onclick = function(){ submitCheckin(); };
+
+    var shareKindEls = document.querySelectorAll('#shareKinds .share-kind');
+    for(i=0;i<shareKindEls.length;i++){
+      (function(el2){ el2.onclick = function(){ state.shareKind = el2.dataset.kind; render(); }; })(shareKindEls[i]);
+    }
+    var shareBtns = document.querySelectorAll('.share-btn');
+    for(i=0;i<shareBtns.length;i++){
+      (function(btn){
+        btn.onclick = function(){
+          var dm = generateDayMap(state.plan);
+          var cArr = state.progress.completed_days||[];
+          var cSet = {};
+          for(var k=0;k<cArr.length;k++){ cSet[cArr[k]] = true; }
+          var cCount = cArr.length;
+          var sPct = Math.round(cCount/100*100);
+          var lastDone = 0;
+          for(var k2=0;k2<cArr.length;k2++){ if(cArr[k2] > lastDone) lastDone = cArr[k2]; }
+          var sPhase = phaseForDay(Math.max(1, lastDone+1));
+          var sNextDay = 1;
+          for(var dn=1; dn<=100; dn++){ if(!cSet[dn]){ sNextDay = dn; break; } }
+          doShare(state.shareKind, state.plan, cCount, sPct, sPhase.name, dm[sNextDay], btn.dataset.platform);
+        };
+      })(shareBtns[i]);
+    }
 
     buildProgressChart();
   }
