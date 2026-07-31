@@ -629,7 +629,18 @@ function getLifestyleTips(plan, checkins, completedCount){
 var SHARE_URL = 'https://googoo.aricciviclabs.org/plan-accounts-pitch.html';
 var GOAL_LABELS = { fat:'fat loss', strength:'strength', mobility:'mobility' };
 
-function buildShareContent(kind, plan, completedCount, pct, phaseName, nextDay){
+function trendSentence(trends){
+  if(trends && trends.weight && trends.weight.change !== 0){
+    var dw = trends.weight;
+    return ' Weight ' + (dw.change < 0 ? 'down' : 'up') + ' ' + Math.abs(dw.change).toFixed(1) + ' since I started.';
+  }
+  if(trends && trends.waist && trends.waist.change !== 0){
+    var da = trends.waist;
+    return ' Waist ' + (da.change < 0 ? 'down' : 'up') + ' ' + Math.abs(da.change).toFixed(1) + 'in since I started.';
+  }
+  return '';
+}
+function buildShareContent(kind, plan, completedCount, pct, phaseName, nextDay, trends){
   var goalLabel = GOAL_LABELS[plan.goal] || plan.goal;
   if(kind === 'today' && nextDay){
     return {
@@ -646,11 +657,11 @@ function buildShareContent(kind, plan, completedCount, pct, phaseName, nextDay){
   // progress (default)
   return {
     title: 'My PlanForge progress',
-    text: completedCount + ' days into my PlanForge 100-day ' + goalLabel + ' plan (' + pct + '% done, currently in ' + phaseName + ') — it adapts every week from my own check-ins instead of staying static. Free to start:'
+    text: completedCount + ' days into my PlanForge 100-day ' + goalLabel + ' plan (' + pct + '% done, currently in ' + phaseName + ') — it adapts every week from my own check-ins instead of staying static.' + trendSentence(trends) + ' Free to start:'
   };
 }
-function doShare(kind, plan, completedCount, pct, phaseName, nextDay, platform){
-  var content = buildShareContent(kind, plan, completedCount, pct, phaseName, nextDay);
+function doShare(kind, plan, completedCount, pct, phaseName, nextDay, platform, trends){
+  var content = buildShareContent(kind, plan, completedCount, pct, phaseName, nextDay, trends);
   var full = content.text + ' ' + SHARE_URL;
   if(platform === 'native' && navigator.share){
     navigator.share({ title: content.title, text: content.text, url: SHARE_URL }).catch(function(){});
@@ -965,7 +976,8 @@ function renderAppBody(){
   for(var dnum=1; dnum<=100; dnum++){ if(!completedSet[dnum]){ nextDay = dnum; break; } }
 
   var checkinDue = state.checkins.length===0 || (completedCount - (state.checkins.length*7)) >= 7;
-  var shareContent = buildShareContent(state.shareKind, state.plan, completedCount, pct, currentPhase.name, dayMap[nextDay]);
+  var trends = getTrendDeltas(state.checkins);
+  var shareContent = buildShareContent(state.shareKind, state.plan, completedCount, pct, currentPhase.name, dayMap[nextDay], trends);
 
   // preserve the currently-selected phase tab across re-renders (CSS handles the switching itself)
   var existingChecked = document.querySelector('input[name="phaseTab"]:checked');
@@ -1054,7 +1066,7 @@ function renderAppBody(){
     + '</div>'
 
     + '<div class="card">'
-    +   '<div class="card-title" style="margin-bottom:12px;">PROGRESS OVER TIME</div>'
+    +   '<div class="card-h"><div class="card-title">PROGRESS OVER TIME</div>'+(state.checkins.length >= 2 ? '<a id="shareTrendBtn" class="btn btn-ghost btn-sm">📤 Share</a>' : '')+'</div>'
     +   (state.checkins.length < 2 ? '<div class="chart-empty">Submit at least two check-ins to see a trend line.</div>' :
           '<div class="chart-toggles" id="chartToggles"></div><svg class="chart-svg" id="chartSvg" viewBox="0 0 640 180" preserveAspectRatio="none"></svg>')
     + '</div>'
@@ -1114,30 +1126,26 @@ function renderAppBody(){
 /* ═══════════════════════════ CHART ═══════════════════════════ */
 function buildProgressChart(){
   if(state.checkins.length < 2) return;
+  var totalN = state.checkins.length;
   var hrEstimate = 68;
-  var hrSeries = [];
-  var i;
-  for(i=0;i<state.checkins.length;i++){ hrEstimate += state.checkins[i].hr_delta; hrSeries.push(hrEstimate); }
-  var completionSeries = [];
-  for(i=0;i<state.checkins.length;i++){
-    var dpw = state.checkins[i].days_per_week || 7; // older rows saved before this fix fall back to 7
-    completionSeries.push(Math.round(state.checkins[i].sessions_completed/dpw*100));
+  var hrPoints = [], completionPoints = [], waistPoints = [], weightPoints = [];
+  for(var idx=0; idx<totalN; idx++){
+    var ci = state.checkins[idx];
+    hrEstimate += ci.hr_delta;
+    hrPoints.push({x:idx, value:hrEstimate, week:ci.week_number});
+    var dpw = ci.days_per_week || 7; // older rows saved before that fix fall back to 7
+    completionPoints.push({x:idx, value:Math.round(ci.sessions_completed/dpw*100), week:ci.week_number});
+    if(ci.waist!=null) waistPoints.push({x:idx, value:ci.waist, week:ci.week_number});
+    if(ci.weight!=null) weightPoints.push({x:idx, value:ci.weight, week:ci.week_number});
   }
-  var waistSeries = [];
-  for(i=0;i<state.checkins.length;i++){ if(state.checkins[i].waist!=null) waistSeries.push(state.checkins[i].waist); }
-  var weightSeries = [];
-  for(i=0;i<state.checkins.length;i++){ if(state.checkins[i].weight!=null) weightSeries.push(state.checkins[i].weight); }
 
   var metrics = {
-    completion: { label:'Weekly completion (% of goal)', color:'#2B8C7E', data: completionSeries },
-    hr:         { label:'Resting HR estimate (bpm)', color:'#3B7DD8', data: hrSeries }
+    completion: { label:'Weekly completion (% of goal)', color:'#2B8C7E', points: completionPoints },
+    hr:         { label:'Resting HR estimate (bpm)', color:'#3B7DD8', points: hrPoints }
   };
-  if(waistSeries.length === state.checkins.length){
-    metrics.waist = { label:'Waist (in)', color:'#A8412F', data: waistSeries };
-  }
-  if(weightSeries.length === state.checkins.length){
-    metrics.weight = { label:'Weight', color:'#C97A0A', data: weightSeries };
-  }
+  // Optional: shown as soon as there's at least one logged value, not only if every check-in has one
+  if(waistPoints.length >= 1) metrics.waist = { label:'Waist (in)', color:'#A8412F', points: waistPoints };
+  if(weightPoints.length >= 1) metrics.weight = { label:'Weight', color:'#C97A0A', points: weightPoints };
 
   var svg = el('chartSvg'); var toggles = el('chartToggles');
   if(!svg || !toggles) return;
@@ -1146,7 +1154,7 @@ function buildProgressChart(){
 
   function draw(){
     svg.innerHTML = '';
-    var w=640,h=180,pad=18,n=state.checkins.length;
+    var w=640,h=180,pad=18;
     for(var gi=0; gi<=3; gi++){
       var y = pad + (h-2*pad)*gi/3;
       var l = document.createElementNS("http://www.w3.org/2000/svg","line");
@@ -1155,27 +1163,31 @@ function buildProgressChart(){
     }
     for(var key in metrics){
       var m = metrics[key];
-      if(!on[key]) continue;
-      var min = Math.min.apply(null, m.data), max = Math.max.apply(null, m.data);
+      if(!on[key] || !m.points.length) continue;
+      var values = [];
+      for(var vi=0; vi<m.points.length; vi++){ values.push(m.points[vi].value); }
+      var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
       var pts = [];
-      for(var pi=0; pi<m.data.length; pi++){
-        var v = m.data[pi];
-        var x = pad + (w-2*pad)*(n<=1?0:pi/(n-1));
-        var norm = max===min?0.5:(v-min)/(max-min);
-        pts.push([x, h-pad-norm*(h-2*pad)]);
+      for(var pi=0; pi<m.points.length; pi++){
+        var p = m.points[pi];
+        var xPix = pad + (w-2*pad)*(totalN<=1?0:p.x/(totalN-1));
+        var norm = max===min?0.5:(p.value-min)/(max-min);
+        pts.push([xPix, h-pad-norm*(h-2*pad), p]);
       }
-      var pointsStr = '';
-      for(pi=0; pi<pts.length; pi++){ pointsStr += pts[pi][0]+','+pts[pi][1]+' '; }
-      var poly = document.createElementNS("http://www.w3.org/2000/svg","polyline");
-      poly.setAttribute("points", pointsStr);
-      poly.setAttribute("fill","none"); poly.setAttribute("stroke",m.color);
-      poly.setAttribute("stroke-width","2.5"); poly.setAttribute("stroke-linecap","round"); poly.setAttribute("stroke-linejoin","round");
-      svg.appendChild(poly);
-      for(pi=0; pi<pts.length; pi++){
+      if(pts.length > 1){
+        var pointsStr = '';
+        for(var pj=0; pj<pts.length; pj++){ pointsStr += pts[pj][0]+','+pts[pj][1]+' '; }
+        var poly = document.createElementNS("http://www.w3.org/2000/svg","polyline");
+        poly.setAttribute("points", pointsStr);
+        poly.setAttribute("fill","none"); poly.setAttribute("stroke",m.color);
+        poly.setAttribute("stroke-width","2.5"); poly.setAttribute("stroke-linecap","round"); poly.setAttribute("stroke-linejoin","round");
+        svg.appendChild(poly);
+      }
+      for(var pk=0; pk<pts.length; pk++){
         var c = document.createElementNS("http://www.w3.org/2000/svg","circle");
-        c.setAttribute("cx",pts[pi][0]); c.setAttribute("cy",pts[pi][1]); c.setAttribute("r",3); c.setAttribute("fill",m.color);
+        c.setAttribute("cx",pts[pk][0]); c.setAttribute("cy",pts[pk][1]); c.setAttribute("r",3); c.setAttribute("fill",m.color);
         var t = document.createElementNS("http://www.w3.org/2000/svg","title");
-        t.textContent = 'Week '+state.checkins[pi].week_number+' · '+m.label+': '+m.data[pi];
+        t.textContent = 'Week '+pts[pk][2].week+' · '+m.label+': '+pts[pk][2].value;
         c.appendChild(t); svg.appendChild(c);
       }
     }
@@ -1190,6 +1202,24 @@ function buildProgressChart(){
     })(key2, metrics[key2]);
   }
   draw();
+
+  var shareTrendBtn = el('shareTrendBtn');
+  if(shareTrendBtn) shareTrendBtn.onclick = function(){
+    state.shareKind = 'progress';
+    render();
+    var target = document.querySelector('.share-preview');
+    if(target) target.scrollIntoView({behavior:'smooth', block:'center'});
+  };
+}
+
+function getTrendDeltas(checkins){
+  function delta(field){
+    var vals = [];
+    for(var i=0;i<checkins.length;i++){ if(checkins[i][field]!=null) vals.push(checkins[i][field]); }
+    if(vals.length < 2) return null;
+    return { first: vals[0], last: vals[vals.length-1], change: vals[vals.length-1]-vals[0] };
+  }
+  return { waist: delta('waist'), weight: delta('weight') };
 }
 
 /* ═══════════════════════════ EVENTS ═══════════════════════════ */
@@ -1314,7 +1344,7 @@ function wireEvents(){
           var sPhase = phaseForDay(Math.max(1, lastDone+1));
           var sNextDay = 1;
           for(var dn=1; dn<=100; dn++){ if(!cSet[dn]){ sNextDay = dn; break; } }
-          doShare(state.shareKind, state.plan, cCount, sPct, sPhase.name, dm[sNextDay], btn.dataset.platform);
+          doShare(state.shareKind, state.plan, cCount, sPct, sPhase.name, dm[sNextDay], btn.dataset.platform, getTrendDeltas(state.checkins));
         };
       })(shareBtns[i]);
     }
