@@ -910,9 +910,13 @@ function renderOnboarding(){
     + '</div>'
     + '<div class="onb-label">DAYS PER WEEK</div>'
     + '<div class="chip-row" id="freqChips">'
+    +   '<div class="chip" data-freq="1">1</div>'
+    +   '<div class="chip" data-freq="2">2</div>'
     +   '<div class="chip" data-freq="3">3</div>'
-    +   '<div class="chip active" data-freq="5">5</div>'
+    +   '<div class="chip" data-freq="4">4</div>'
+    +   '<div class="chip" data-freq="5">5</div>'
     +   '<div class="chip" data-freq="6">6</div>'
+    +   '<div class="chip" data-freq="7">7</div>'
     + '</div>'
     + '<div class="onb-label">CARDIO STYLE <span style="color:var(--muted-dim); text-transform:none; font-weight:400;">(optional, pick any)</span></div>'
     + '<div class="chip-row" id="cardioChips">'
@@ -1201,7 +1205,7 @@ function wireEvents(){
     if(switchLink) switchLink.onclick = function(){ state.authMode='signup'; state.authError=''; render(); };
   }
   if(state.screen==='onboarding'){
-    var goal='fat', freq=5;
+    var goal='fat', freq=null;
     var goalChips = document.querySelectorAll('#goalChips .chip');
     var gi;
     for(gi=0; gi<goalChips.length; gi++){
@@ -1247,7 +1251,10 @@ function wireEvents(){
         };
       })(sexChips[gi]);
     }
-    el('onbSubmit').onclick = function(){ handleCreatePlan(goal, freq, sex, cardioTypes); };
+    el('onbSubmit').onclick = function(){
+      if(!freq){ alert('Pick how many days per week you\'re training first — there\'s no default, since the whole plan is built around that number.'); return; }
+      handleCreatePlan(goal, freq, sex, cardioTypes);
+    };
     var cancelBtn = el('onbCancel');
     if(cancelBtn) cancelBtn.onclick = function(){ state.screen='app'; render(); };
   }
